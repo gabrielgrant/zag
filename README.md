@@ -66,6 +66,7 @@ For framework specific solutions, we provide simple wrappers to help you consume
 - 💚 `@zag-js/vue` - Vue composition for consuming machines in Vue applications
 - 🎷 `@zag-js/solid` - Solid.js utilities for consuming machines in Solid.js applications
 - 🎷 `@zag-js/svelte` - Svelte utilities for consuming machines in Svelte applications
+- ⚡ `@zag-js/qwik` - Qwik utilities for consuming machines in Qwik applications
 
 ## Usage
 
@@ -136,6 +137,7 @@ projects for the frameworks we support.
 - `start-vue` : Starts the Vue 3 TypeScript project
 - `start-solid` : Starts the Solid TypeScript project
 - `start-svelte` : Starts the Svelte TypeScript project
+- `start-qwik` : Starts the Qwik TypeScript project
 
 ### E2E Tests
 
