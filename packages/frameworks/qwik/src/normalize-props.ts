@@ -28,6 +28,8 @@ const PREVENT_DEFAULT_EVENTS = new Set([
 
 /**
  * Maps React-style event names to Qwik-style event names
+ * Note: Most events (onClick, onMouseDown, etc.) work with just adding $ suffix
+ * Only special cases that have different names need mapping
  */
 const eventMap: Record<string, string> = {
   onDoubleClick: "onDblClick$",
@@ -45,10 +47,13 @@ function isEventHandler(key: string, value: any): boolean {
 
 /**
  * Wraps event handler in QRL (Qwik Resource Locator) if needed
+ * Note: In practice, handlers from Zag machines are plain functions
+ * and always need wrapping. The QRL check is defensive programming.
  */
 function wrapEventHandler(handler: Function): QRL<(event: any) => void> {
-  // If already a QRL, return as is
-  if (typeof handler === "object" && "resolved" in handler) {
+  // If already wrapped (defensive check), return as is
+  // Note: This is a heuristic - Qwik QRLs have internal structure
+  if (typeof handler === "object" && handler !== null) {
     return handler as QRL<(event: any) => void>
   }
   // Wrap in $ to create QRL
@@ -109,6 +114,10 @@ export const normalizePropsAutoPrevent = createNormalizer<PropTypes>((props: Dic
       // Check if this is an event that commonly needs preventDefault
       if (PREVENT_DEFAULT_EVENTS.has(key)) {
         // Convert handler to string to check for preventDefault
+        // NOTE: This is a heuristic that may have false positives/negatives
+        // - False negative: preventDefault in conditionals may not be detected
+        // - False positive: Comments or strings containing "preventDefault"
+        // For complex cases, use normalizePropsManual or helper functions
         const handlerStr = value.toString()
         const hasPreventDefault = handlerStr.includes("preventDefault")
 
@@ -206,7 +215,7 @@ export const normalizeProps = normalizePropsAutoPrevent
 export function createConditionalPreventDefault<E = Event>(
   condition: (event: E, target: HTMLElement) => boolean,
   handler: (event: E) => void | Promise<void>,
-): QRL<(event: E, target: HTMLElement) => void>[] {
+): Array<QRL<(event: E, target: HTMLElement) => void> | QRL<(event: E) => void>> {
   return [
     sync$((event: E, target: HTMLElement) => {
       if (condition(event, target)) {
@@ -214,7 +223,7 @@ export function createConditionalPreventDefault<E = Event>(
       }
     }),
     $((event: E) => handler(event)),
-  ] as any
+  ]
 }
 
 /**
@@ -230,7 +239,7 @@ export function createConditionalPreventDefault<E = Event>(
 export function createAttributePreventDefault<E = Event>(
   attributeName: string,
   handler: (event: E) => void | Promise<void>,
-): QRL<(event: E, target: HTMLElement) => void>[] {
+): Array<QRL<(event: E, target: HTMLElement) => void> | QRL<(event: E) => void>> {
   return [
     sync$((event: E, target: HTMLElement) => {
       if (target.hasAttribute(attributeName)) {
@@ -238,5 +247,5 @@ export function createAttributePreventDefault<E = Event>(
       }
     }),
     $((event: E) => handler(event)),
-  ] as any
+  ]
 }

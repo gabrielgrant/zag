@@ -228,7 +228,7 @@ export function useMachine<T extends MachineSchema>(
 
       const fns = effects.values()
       for (const fn of fns) fn?.()
-      effects = new Map()
+      effects.clear() // Clear the map instead of reassigning
       action(machine.exit)
     }
   })
