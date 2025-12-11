@@ -39,7 +39,7 @@ export function useMachine<T extends MachineSchema>(
 
   const context: any = machine.context?.({
     prop,
-    bindable: createBindable,
+    bindable: createBindable as any,
     scope,
     flush,
     getContext() {
@@ -88,7 +88,7 @@ export function useMachine<T extends MachineSchema>(
     },
   })
 
-  const getState = () => ({
+  const getState = (): any => ({
     ...state,
     matches(...values: T["state"][]) {
       const currentState = state.get()
@@ -100,7 +100,7 @@ export function useMachine<T extends MachineSchema>(
     },
   })
 
-  const refs = useRefs(machine.refs?.({ prop, context: ctx }) ?? {})
+  const refs = useRefs(machine.refs?.({ prop, context: ctx }) ?? {}) as any
 
   const getParams = (): Params<T> => ({
     state: getState(),
@@ -110,7 +110,7 @@ export function useMachine<T extends MachineSchema>(
     send,
     action,
     guard,
-    track: useTrack,
+    track: useTrack as any,
     refs,
     computed,
     flush,
@@ -174,9 +174,9 @@ export function useMachine<T extends MachineSchema>(
     })
   }
 
-  const state = createBindable(() => ({
+  const state: any = createBindable(() => ({
     defaultValue: machine.initialState({ prop }),
-    onChange(nextState, prevState) {
+    onChange(nextState: any, prevState: any) {
       // compute effects: exit -> transition -> enter
 
       // exit effects
@@ -188,6 +188,7 @@ export function useMachine<T extends MachineSchema>(
 
       // exit actions
       if (prevState) {
+        // @ts-ignore - dynamic state access
         action(machine.states[prevState]?.exit)
       }
 
@@ -195,6 +196,7 @@ export function useMachine<T extends MachineSchema>(
       action(transitionRef?.actions)
 
       // enter effect
+      // @ts-ignore - dynamic state access
       const cleanup = effect(machine.states[nextState]?.effects)
       if (cleanup) effects.set(nextState as string, cleanup)
 
@@ -206,6 +208,7 @@ export function useMachine<T extends MachineSchema>(
       }
 
       // enter actions
+      // @ts-ignore - dynamic state access
       action(machine.states[nextState]?.entry)
     },
   }))

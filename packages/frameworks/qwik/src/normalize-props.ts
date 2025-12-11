@@ -1,17 +1,15 @@
 import { createNormalizer } from "@zag-js/types"
 import { $, sync$, type QRL } from "@builder.io/qwik"
-import type { JSXOutput } from "@builder.io/qwik"
+import type { JSX } from "@builder.io/qwik"
 
 type Dict = Record<string, any>
 
 /**
  * Qwik-specific JSX types for prop normalization
  */
-export type PropTypes = {
-  [K in keyof JSXOutput.IntrinsicElements]: JSXOutput.IntrinsicElements[K]
-} & {
-  element: JSXOutput.HTMLAttributes<HTMLElement>
-  style: JSXOutput.CSSProperties
+export type PropTypes = JSX.IntrinsicElements & {
+  element: JSX.IntrinsicElements["div"]
+  style: Record<string, any>
 }
 
 /**
@@ -76,7 +74,7 @@ export const normalizePropsBasic = createNormalizer<PropTypes>((props: Dict) => 
 
     // Handle event handlers - wrap in QRL
     if (isEventHandler(key, value)) {
-      const qwikKey = eventMap[key] || (key + "$")
+      const qwikKey = eventMap[key] || key + "$"
       normalized[qwikKey] = wrapEventHandler(value)
       continue
     }
@@ -106,8 +104,8 @@ export const normalizePropsAutoPrevent = createNormalizer<PropTypes>((props: Dic
 
     // Handle event handlers
     if (isEventHandler(key, value)) {
-      const qwikKey = eventMap[key] || (key + "$")
-      
+      const qwikKey = eventMap[key] || key + "$"
+
       // Check if this is an event that commonly needs preventDefault
       if (PREVENT_DEFAULT_EVENTS.has(key)) {
         // Convert handler to string to check for preventDefault
@@ -172,7 +170,7 @@ export const normalizePropsManual = createNormalizer<PropTypes>((props: Dict) =>
     // Handle event handlers
     if (isEventHandler(key, value)) {
       const eventName = key.slice(2).toLowerCase() // onClick -> click
-      const qwikKey = eventMap[key] || (key + "$")
+      const qwikKey = eventMap[key] || key + "$"
 
       // Add preventDefault attribute if specified
       if (preventDefaults.has(eventName)) {
@@ -198,7 +196,7 @@ export const normalizeProps = normalizePropsAutoPrevent
 /**
  * Helper to create a sync$ wrapper for conditional preventDefault
  * This is useful when you need to prevent default based on runtime conditions
- * 
+ *
  * @example
  * const handler = createConditionalPreventDefault(
  *   (event, target) => event.ctrlKey, // condition
@@ -212,7 +210,7 @@ export function createConditionalPreventDefault<E = Event>(
   return [
     sync$((event: E, target: HTMLElement) => {
       if (condition(event, target)) {
-        (event as any).preventDefault()
+        ;(event as any).preventDefault()
       }
     }),
     $((event: E) => handler(event)),
@@ -222,7 +220,7 @@ export function createConditionalPreventDefault<E = Event>(
 /**
  * Helper to create a sync$ wrapper that checks data attribute
  * This allows passing state via attributes for conditional preventDefault
- * 
+ *
  * @example
  * <button
  *   data-should-prevent="true"
@@ -236,7 +234,7 @@ export function createAttributePreventDefault<E = Event>(
   return [
     sync$((event: E, target: HTMLElement) => {
       if (target.hasAttribute(attributeName)) {
-        (event as any).preventDefault()
+        ;(event as any).preventDefault()
       }
     }),
     $((event: E) => handler(event)),

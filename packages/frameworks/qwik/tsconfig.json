@@ -4,7 +4,8 @@
     "target": "ES2022",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "jsx": "preserve",
-    "jsxImportSource": "@builder.io/qwik"
+    "jsxImportSource": "@builder.io/qwik",
+    "incremental": false
   },
   "include": ["src"]
 }
