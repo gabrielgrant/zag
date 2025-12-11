@@ -1,0 +1,25 @@
+{
+  "name": "qwik-ts",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "vite --mode ssr --port 3004",
+    "build": "vite build",
+    "preview": "vite preview --open",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@builder.io/qwik": "^1.10.0",
+    "@builder.io/qwik-city": "^1.10.0",
+    "@zag-js/checkbox": "workspace:*",
+    "@zag-js/toggle-group": "workspace:*",
+    "@zag-js/qwik": "workspace:*",
+    "@zag-js/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.2",
+    "typescript": "5.8.2",
+    "vite": "6.0.7",
+    "vite-tsconfig-paths": "5.2.2"
+  }
+}
