@@ -1,0 +1,77 @@
+import { bindProps, splitProps } from "../src"
+
+describe("splitProps", () => {
+  test("separates native handlers from JSX-safe static props", () => {
+    const onPointerDown = vi.fn()
+    const result = splitProps({ id: "trigger", "aria-expanded": false, onPointerDown })
+
+    expect(result.staticProps).toEqual({ id: "trigger", "aria-expanded": false })
+    expect(result.eventProps).toEqual({ pointerdown: onPointerDown })
+  })
+})
+
+describe("bindProps", () => {
+  test("keeps conditional preventDefault authored by the machine handler", () => {
+    const button = document.createElement("button")
+    const cleanup = bindProps(button, {
+      onPointerDown(event: Event) {
+        if ((event as PointerEvent).pointerType === "mouse") event.preventDefault()
+      },
+    })
+
+    const mouse = new Event("pointerdown", { cancelable: true }) as PointerEvent
+    const touch = new Event("pointerdown", { cancelable: true }) as PointerEvent
+    Object.defineProperty(mouse, "pointerType", { value: "mouse" })
+    Object.defineProperty(touch, "pointerType", { value: "touch" })
+    button.dispatchEvent(mouse)
+    button.dispatchEvent(touch)
+
+    expect(mouse.defaultPrevented).toBe(true)
+    expect(touch.defaultPrevented).toBe(false)
+    cleanup()
+  })
+
+  test("cleanup detaches listeners deterministically", () => {
+    const button = document.createElement("button")
+    const onClick = vi.fn()
+    const cleanup = bindProps(button, { onClick })
+
+    button.click()
+    cleanup()
+    button.click()
+
+    expect(onClick).toHaveBeenCalledOnce()
+  })
+
+  test("rebinding replaces listeners without allowing stale cleanup to detach the replacement", () => {
+    const button = document.createElement("button")
+    const first = vi.fn()
+    const second = vi.fn()
+    const cleanupFirst = bindProps(button, { onClick: first })
+    bindProps(button, { onClick: second })
+
+    cleanupFirst()
+    button.click()
+
+    expect(first).not.toHaveBeenCalled()
+    expect(second).toHaveBeenCalledOnce()
+  })
+
+  test("preserves runtime CSS variables across declarative style replacements", async () => {
+    const positioner = document.createElement("div")
+    const cleanup = bindProps(positioner, {})
+
+    positioner.style.setProperty("--x", "24px")
+    await Promise.resolve()
+    positioner.setAttribute("style", "transform: translate3d(var(--x), var(--y), 0)")
+    await Promise.resolve()
+
+    expect(positioner.style.getPropertyValue("--x")).toBe("24px")
+
+    cleanup()
+    positioner.setAttribute("style", "transform: none")
+    await Promise.resolve()
+
+    expect(positioner.style.getPropertyValue("--x")).toBe("")
+  })
+})

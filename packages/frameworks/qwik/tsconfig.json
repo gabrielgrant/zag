@@ -1,0 +1,8 @@
+{
+  "extends": "../../../tsconfig.json",
+  "include": ["src", "tests"],
+  "compilerOptions": {
+    "jsxImportSource": "@qwik.dev/core",
+    "tsBuildInfoFile": "node_modules/.cache/.tsbuildinfo"
+  }
+}

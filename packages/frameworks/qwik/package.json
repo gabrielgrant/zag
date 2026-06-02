@@ -1,0 +1,51 @@
+{
+  "name": "@zag-js/qwik",
+  "version": "1.41.1",
+  "description": "The Qwik wrapper for zag",
+  "keywords": [
+    "ui-machines",
+    "state-machines",
+    "zag",
+    "qwik",
+    "use-machine",
+    "hook"
+  ],
+  "author": "Segun Adebayo <sage@adebayosegun.com>",
+  "homepage": "https://github.com/chakra-ui/zag#readme",
+  "license": "MIT",
+  "repository": "https://github.com/chakra-ui/zag/tree/main/packages/frameworks/qwik",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "bugs": {
+    "url": "https://github.com/chakra-ui/zag/issues"
+  },
+  "dependencies": {
+    "@zag-js/core": "workspace:*",
+    "@zag-js/types": "workspace:*",
+    "@zag-js/vanilla": "workspace:*"
+  },
+  "devDependencies": {
+    "@qwik.dev/core": "2.0.0-beta.36",
+    "@types/jsdom": "^28.0.1",
+    "clean-package": "2.2.0",
+    "jsdom": "^29.0.1"
+  },
+  "peerDependencies": {
+    "@qwik.dev/core": ">=2.0.0-beta.36 <3"
+  },
+  "scripts": {
+    "build": "tsup",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
+    "prepack": "clean-package",
+    "postpack": "clean-package restore",
+    "test": "vitest"
+  },
+  "clean-package": "../../../clean-package.config.json",
+  "main": "src/index.ts"
+}
