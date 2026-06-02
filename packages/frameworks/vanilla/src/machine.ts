@@ -42,6 +42,11 @@ import { bindable } from "./bindable"
 import { createRefs } from "./refs"
 import { mergeMachineProps } from "./merge-machine-props"
 
+export interface VanillaMachineSnapshot<T extends MachineSchema> {
+  state: T["state"]
+  context: Partial<T["context"]>
+}
+
 export class VanillaMachine<T extends MachineSchema> {
   scope: Scope
   context: BindableContext<T>
@@ -60,6 +65,7 @@ export class VanillaMachine<T extends MachineSchema> {
   private subscriptions: Array<(service: Service<T>) => void> = []
 
   private userPropsRef: { current: Partial<T["props"]> | (() => Partial<T["props"]>) }
+  private contextSnapshot: Record<string, unknown> = {}
 
   private getEvent = () => ({
     ...this.event,
@@ -85,6 +91,7 @@ export class VanillaMachine<T extends MachineSchema> {
   constructor(
     private machine: Machine<T>,
     userProps: Partial<T["props"]> | (() => Partial<T["props"]>) = {},
+    snapshot?: VanillaMachineSnapshot<T>,
   ) {
     this.userPropsRef = { current: userProps }
 
@@ -118,6 +125,11 @@ export class VanillaMachine<T extends MachineSchema> {
         return refs as any
       },
       getEvent: this.getEvent.bind(this),
+    })
+
+    this.contextSnapshot = Object.fromEntries(Object.keys(context ?? {}).map((key) => [key, undefined]))
+    Object.entries(snapshot?.context ?? {}).forEach(([key, value]) => {
+      if (context?.[key]) context[key].ref.value = value
     })
 
     // subscribe to context changes
@@ -164,7 +176,7 @@ export class VanillaMachine<T extends MachineSchema> {
 
     // state
     const state = bindable(() => ({
-      defaultValue: resolveStateValue(machine, machine.initialState({ prop })),
+      defaultValue: snapshot?.state ?? resolveStateValue(machine, machine.initialState({ prop })),
       onChange: (nextState, prevState) => {
         const { exiting, entering } = getExitEnterStates(this.machine, prevState, nextState, this.transition?.reenter)
 
@@ -216,6 +228,18 @@ export class VanillaMachine<T extends MachineSchema> {
     }
 
     this.notify()
+  }
+
+  toSnapshot(): VanillaMachineSnapshot<T> {
+    const context = Object.keys(this.contextSnapshot).reduce<Record<string, unknown>>((acc, key) => {
+      acc[key] = this.context.get(key as keyof T["context"])
+      return acc
+    }, {})
+
+    return {
+      state: this.state.get(),
+      context,
+    }
   }
 
   send = (event: T["event"]) => {

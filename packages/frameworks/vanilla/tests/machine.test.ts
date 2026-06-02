@@ -7,6 +7,39 @@ async function tick() {
 }
 
 describe("basic", () => {
+  test("serializes and restores state and context snapshots", async () => {
+    const machine = createMachine<any>({
+      initialState() {
+        return "idle"
+      },
+      context({ bindable }) {
+        return {
+          value: bindable(() => ({ defaultValue: "initial" })),
+        }
+      },
+      states: {
+        idle: {
+          on: {
+            OPEN: { target: "open" },
+          },
+        },
+        open: {},
+      },
+    })
+
+    const service = new VanillaMachine(machine)
+    service.start()
+    service.context.set("value", "changed")
+    service.send({ type: "OPEN" })
+    await tick()
+
+    const restored = new VanillaMachine(machine, {}, service.toSnapshot())
+
+    expect(restored.state.get()).toBe("open")
+    expect(restored.context.get("value")).toBe("changed")
+    service.stop()
+  })
+
   test("initial state", async () => {
     const machine = createMachine<any>({
       initialState() {
