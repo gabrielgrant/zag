@@ -32,7 +32,7 @@ export default defineConfig(
 )
 
 function errorOnDuplicatesPkgDeps(devDependencies: PkgDep, dependencies: PkgDep) {
-  const qwikPkg = Object.keys(dependencies).filter((value) => /qwik/i.test(value))
+  const qwikPkg = Object.keys(dependencies).filter((value) => value.startsWith("@qwik.dev/"))
   if (qwikPkg.length > 0) {
     throw new Error(`Move qwik packages ${qwikPkg.join(", ")} to devDependencies`)
   }

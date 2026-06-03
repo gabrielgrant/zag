@@ -48,3 +48,14 @@ Expected result: `qwik build preview` emits resumable client chunks without `__V
 
 - Result: the adapter package built, but the Qwik example typecheck failed because the workspace root `tsconfig.json` contains `ignoreDeprecations: "6.0"`, which TypeScript 5.9 rejects.
 - Decision: keep the example on a generated-app style TypeScript config. This avoids mixing a TS 5.9 Qwik scaffold with the workspace's TS 6 root settings.
+
+### Preview build after scaffold config
+
+- Result: the generated scaffold dependency guard rejected `@zag-js/qwik` because it matched any package name containing "qwik".
+- Decision: keep the guard, but narrow it to `@qwik.dev/*` packages. `@zag-js/qwik` is the adapter under test and belongs in example dependencies.
+
+### Browser probe after scaffold alignment
+
+- Result: `qwik build preview` succeeded with Vite 7.3.1, and generated output no longer contained `__VITE_PRELOAD__` or `/build/_`.
+- Result: Playwright loaded `/menu/basic/`, observed `q:container="resumed"`, clicked the menu trigger, and saw the menu content change from closed/hidden to open/visible with no browser errors.
+- Decision: the clean fix is app-level scaffold alignment, not Playwright polling or adapter runtime-symbol registration.
