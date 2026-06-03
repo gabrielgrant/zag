@@ -40,5 +40,11 @@ Change only the Qwik example setup to match generated Qwik v2 scaffolding where 
 - Use Vite 7.3.1 instead of Vite 8.0.14.
 - Use TypeScript 5.9.3 instead of TypeScript 6.0.3.
 - Use the scaffold's Qwik/Vite config shape.
+- Use a standalone scaffold-like `tsconfig.json` instead of extending the workspace TS 6 config.
 
 Expected result: `qwik build preview` emits resumable client chunks without `__VITE_PRELOAD__` errors, and Playwright can click the menu without custom waits.
+
+### Typecheck after dependency alignment
+
+- Result: the adapter package built, but the Qwik example typecheck failed because the workspace root `tsconfig.json` contains `ignoreDeprecations: "6.0"`, which TypeScript 5.9 rejects.
+- Decision: keep the example on a generated-app style TypeScript config. This avoids mixing a TS 5.9 Qwik scaffold with the workspace's TS 6 root settings.
