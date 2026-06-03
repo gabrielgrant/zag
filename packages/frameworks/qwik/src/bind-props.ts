@@ -9,13 +9,8 @@ interface Binding {
   cleanup: VoidFunction
 }
 
-const boundProperty = "__zagQwikBound"
 const bindings = new WeakMap<Element, Binding>()
 const styleVariables = new WeakMap<Element, Map<string, string>>()
-
-interface BoundElement extends Element {
-  [boundProperty]?: true
-}
 
 function syncCompositeFocus(node: Element, props: ZagProps): VoidFunction {
   if (props.role !== "menu") return () => {}
@@ -111,10 +106,6 @@ export function bindProps(node: Element, props: ZagProps): VoidFunction {
   Object.entries(eventProps).forEach(([event, listener]) => {
     node.addEventListener(event, listener)
   })
-  Object.defineProperty(node, boundProperty, {
-    configurable: true,
-    value: true,
-  })
 
   const binding: Binding = {
     cleanup() {
@@ -123,7 +114,6 @@ export function bindProps(node: Element, props: ZagProps): VoidFunction {
       Object.entries(eventProps).forEach(([event, listener]) => {
         node.removeEventListener(event, listener)
       })
-      delete (node as BoundElement)[boundProperty]
       if (bindings.get(node) === binding) bindings.delete(node)
     },
   }

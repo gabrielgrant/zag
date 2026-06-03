@@ -78,6 +78,13 @@ The adapter handles that split internally:
 5. Machine publishes are coalesced with `requestAnimationFrame()` before Qwik invalidation.
 6. Qwik v2 serializes the durable state and bindable context snapshot when a boundary requires it.
 
+## Qwik City and tests
+
+Qwik's Playwright integration runs tests against the preview server instead of the dev server. That avoids cold Vite
+optimizer work during the first user gesture and keeps Qwik City tests on the same build-and-preview path users get from
+`pnpm run qwik add playwright`. Apps should be testable with normal Playwright locator actions; they should not need to
+poll private adapter state or retry the first gesture.
+
 ## Feasibility verdict
 
 Parity is **partially achieved**. App code does not write `addEventListener`, refresh snapshots, maintain registries, or

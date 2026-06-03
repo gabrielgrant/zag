@@ -101,4 +101,35 @@ describe("bindProps", () => {
     content.remove()
     vi.unstubAllGlobals()
   })
+
+  test("refocuses a composite menu when it opens after binding", async () => {
+    const content = document.createElement("ul")
+    const focus = vi.spyOn(content, "focus")
+    const frames: FrameRequestCallback[] = []
+
+    vi.stubGlobal("requestAnimationFrame", (fn: FrameRequestCallback) => {
+      frames.push(fn)
+      return frames.length
+    })
+    vi.stubGlobal("cancelAnimationFrame", vi.fn())
+
+    document.body.append(content)
+
+    const cleanup = bindProps(content, {
+      role: "menu",
+      tabIndex: -1,
+      "data-state": "closed",
+    })
+    frames.shift()?.(0)
+    content.setAttribute("data-state", "open")
+    await Promise.resolve()
+    frames.shift()?.(0)
+
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true })
+    expect(content.tabIndex).toBe(0)
+
+    cleanup()
+    content.remove()
+    vi.unstubAllGlobals()
+  })
 })
