@@ -59,3 +59,8 @@ Expected result: `qwik build preview` emits resumable client chunks without `__V
 - Result: `qwik build preview` succeeded with Vite 7.3.1, and generated output no longer contained `__VITE_PRELOAD__` or `/build/_`.
 - Result: Playwright loaded `/menu/basic/`, observed `q:container="resumed"`, clicked the menu trigger, and saw the menu content change from closed/hidden to open/visible with no browser errors.
 - Decision: the clean fix is app-level scaffold alignment, not Playwright polling or adapter runtime-symbol registration.
+
+### Full Qwik Playwright target
+
+- Result: `pnpm e2e-qwik` passed all 8 menu tests against Qwik Router preview output.
+- Decision: no Qwik-specific Playwright wait helper or adapter startup hook is needed for the current example.
