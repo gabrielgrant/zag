@@ -63,21 +63,24 @@ export function useMachineQrl<T extends MachineSchema>(
   const controller = useSerializerQrl(serializer)
   const revision = useSignal(0)
 
-  useVisibleTask$(({ cleanup }) => {
-    const runtime = controller.value
-    runtime.start()
-    const unsubscribe = runtime.subscribe(() => {
-      runtime.scheduleCommit(() => {
-        revision.value += 1
+  useVisibleTask$(
+    ({ cleanup }) => {
+      const runtime = controller.value
+      runtime.start()
+      const unsubscribe = runtime.subscribe(() => {
+        runtime.scheduleCommit(() => {
+          revision.value += 1
+        })
       })
-    })
 
-    cleanup(() => {
-      unsubscribe()
-      runtime.cancelCommit()
-      runtime.stop()
-    })
-  })
+      cleanup(() => {
+        unsubscribe()
+        runtime.cancelCommit()
+        runtime.stop()
+      })
+    },
+    { strategy: "document-ready" },
+  )
 
   return {
     controller,
@@ -100,12 +103,15 @@ export function usePartQrl<T extends MachineSchema>(
   machine.revision.value
   const ref = useSignal<Element>()
 
-  useVisibleTask$(async ({ track, cleanup }) => {
-    track(() => machine.revision.value)
-    const node = ref.value
-    if (!node) return
-    cleanup(machine.controller.value.bind(node, await getProps()))
-  })
+  useVisibleTask$(
+    async ({ track, cleanup }) => {
+      track(() => machine.revision.value)
+      const node = ref.value
+      if (!node) return
+      cleanup(machine.controller.value.bind(node, await getProps()))
+    },
+    { strategy: "document-ready" },
+  )
 
   return {
     ref,

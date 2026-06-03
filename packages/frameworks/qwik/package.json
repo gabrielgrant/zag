@@ -14,10 +14,27 @@
   "homepage": "https://github.com/chakra-ui/zag#readme",
   "license": "MIT",
   "repository": "https://github.com/chakra-ui/zag/tree/main/packages/frameworks/qwik",
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/index.qwik.mjs",
+    "./dist/index.qwik.cjs",
+    "./dist/runtime-symbols.qwik.mjs",
+    "./dist/runtime-symbols.qwik.cjs"
+  ],
   "files": [
     "dist"
   ],
+  "type": "module",
+  "main": "./dist/index.qwik.mjs",
+  "qwik": "./dist/index.qwik.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.qwik.mjs",
+      "require": "./dist/index.qwik.cjs"
+    },
+    "./package.json": "./package.json"
+  },
   "publishConfig": {
     "access": "public"
   },
@@ -39,13 +56,12 @@
     "@qwik.dev/core": ">=2.0.0-beta.36 <3"
   },
   "scripts": {
-    "build": "tsup",
+    "build": "vite build --mode lib && tsc -p tsconfig.build.json --emitDeclarationOnly --incremental false",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
     "prepack": "clean-package",
     "postpack": "clean-package restore",
     "test": "vitest"
   },
-  "clean-package": "../../../clean-package.config.json",
-  "main": "src/index.ts"
+  "clean-package": "./clean-package.config.json"
 }
