@@ -14,12 +14,7 @@
   "homepage": "https://github.com/chakra-ui/zag#readme",
   "license": "MIT",
   "repository": "https://github.com/chakra-ui/zag/tree/main/packages/frameworks/qwik",
-  "sideEffects": [
-    "./dist/index.qwik.mjs",
-    "./dist/index.qwik.cjs",
-    "./dist/runtime-symbols.qwik.mjs",
-    "./dist/runtime-symbols.qwik.cjs"
-  ],
+  "sideEffects": false,
   "files": [
     "dist"
   ],

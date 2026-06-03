@@ -2,12 +2,7 @@
   "replace": {
     "main": "./dist/index.qwik.mjs",
     "qwik": "./dist/index.qwik.mjs",
-    "sideEffects": [
-      "./dist/index.qwik.mjs",
-      "./dist/index.qwik.cjs",
-      "./dist/runtime-symbols.qwik.mjs",
-      "./dist/runtime-symbols.qwik.cjs"
-    ],
+    "sideEffects": false,
     "types": "./dist/index.d.ts",
     "exports": {
       ".": {
