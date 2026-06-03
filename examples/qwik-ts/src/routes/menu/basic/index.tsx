@@ -1,4 +1,4 @@
-import { component$, useId, useSignal, useVisibleTask$ } from "@qwik.dev/core"
+import { component$, useId, useSignal } from "@qwik.dev/core"
 import type { DocumentHead } from "@qwik.dev/router"
 import * as menu from "@zag-js/menu"
 import { createMachineSerializer, normalizeProps, useMachine$, usePart$ } from "@zag-js/qwik"
@@ -16,7 +16,6 @@ export default component$(() => {
   const id = useId()
   const closeOnSelect = useSignal(true)
   const loopFocus = useSignal(false)
-  const visualizerState = useSignal("{}")
   const machine = useMachine$(() =>
     createMachineSerializer(menu.machine, {
       props: () => ({
@@ -98,27 +97,6 @@ export default component$(() => {
       },
     },
   )
-  useVisibleTask$(
-    ({ cleanup }) => {
-      const runtime = machine.controller.value
-      const update = () => {
-        visualizerState.value = JSON.stringify(
-          {
-            state: runtime.service.state.get(),
-            event: runtime.service.event.current(),
-            previousEvent: runtime.service.event.previous(),
-          },
-          null,
-          2,
-        )
-      }
-      update()
-      const unsubscribe = runtime.subscribe(update)
-      cleanup(unsubscribe)
-    },
-    { strategy: "document-ready" },
-  )
-
   return (
     <>
       <main>
@@ -162,7 +140,7 @@ export default component$(() => {
             <label for="loopFocus">loopFocus</label>
           </div>
         </div>
-        <StateVisualizer state={visualizerState.value} />
+        <StateVisualizer controller={machine.controller} revision={machine.revision} />
       </Toolbar>
     </>
   )
