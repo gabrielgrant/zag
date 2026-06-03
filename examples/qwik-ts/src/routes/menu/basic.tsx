@@ -1,4 +1,4 @@
-import { component$, useId, useSignal, useVisibleTask$ } from "@qwik.dev/core"
+import { component$, useId, useSignal } from "@qwik.dev/core"
 import * as menu from "@zag-js/menu"
 import { createMachineSerializer, normalizeProps, useMachine$, usePart$ } from "@zag-js/qwik"
 
@@ -23,15 +23,6 @@ export default component$(() => {
     }),
   )
 
-  useVisibleTask$(({ track }) => {
-    track(() => closeOnSelect.value)
-    track(() => loopFocus.value)
-    machine.controller.value.updateProps({
-      closeOnSelect: closeOnSelect.value,
-      loopFocus: loopFocus.value,
-    })
-  })
-
   const api = menu.connect(machine.controller.value.service, normalizeProps)
   const trigger = usePart$(
     () => menu.connect(machine.controller.value.service, normalizeProps).getTriggerProps(),
@@ -48,19 +39,6 @@ export default component$(() => {
     machine,
     api.getContentProps(),
   )
-
-  useVisibleTask$(({ track, cleanup }) => {
-    track(() => machine.revision.value)
-    const currentApi = menu.connect(machine.controller.value.service, normalizeProps)
-    if (!currentApi.open) return
-
-    const frame = requestAnimationFrame(() => {
-      ;(content.ref.value as HTMLElement | undefined)?.focus({ preventScroll: true })
-    })
-
-    cleanup(() => cancelAnimationFrame(frame))
-  })
-
   const edit = usePart$(
     () => menu.connect(machine.controller.value.service, normalizeProps).getItemProps({ value: "edit" }),
     machine,
@@ -82,6 +60,40 @@ export default component$(() => {
     api.getItemProps({ value: "export" }),
   )
   const items = [edit, duplicate, remove, exportItem]
+  const closeOnSelectControl = usePart$(
+    () => ({
+      onInput(event: Event) {
+        const checked = (event.currentTarget as HTMLInputElement).checked
+        closeOnSelect.value = checked
+        machine.controller.value.updateProps({ closeOnSelect: checked })
+      },
+    }),
+    machine,
+    {
+      onInput(event: Event) {
+        const checked = (event.currentTarget as HTMLInputElement).checked
+        closeOnSelect.value = checked
+        machine.controller.value.updateProps({ closeOnSelect: checked })
+      },
+    },
+  )
+  const loopFocusControl = usePart$(
+    () => ({
+      onInput(event: Event) {
+        const checked = (event.currentTarget as HTMLInputElement).checked
+        loopFocus.value = checked
+        machine.controller.value.updateProps({ loopFocus: checked })
+      },
+    }),
+    machine,
+    {
+      onInput(event: Event) {
+        const checked = (event.currentTarget as HTMLInputElement).checked
+        loopFocus.value = checked
+        machine.controller.value.updateProps({ loopFocus: checked })
+      },
+    },
+  )
 
   return (
     <>
@@ -109,26 +121,22 @@ export default component$(() => {
         <div class="controls-container">
           <div class="checkbox">
             <input
+              ref={closeOnSelectControl.ref}
               checked={closeOnSelect.value}
               data-testid="closeOnSelect"
               id="closeOnSelect"
-              onInput$={(_, element) => {
-                closeOnSelect.value = element.checked
-                machine.controller.value.updateProps({ closeOnSelect: element.checked })
-              }}
+              {...closeOnSelectControl.props}
               type="checkbox"
             />
             <label for="closeOnSelect">closeOnSelect</label>
           </div>
           <div class="checkbox">
             <input
+              ref={loopFocusControl.ref}
               checked={loopFocus.value}
               data-testid="loopFocus"
               id="loopFocus"
-              onInput$={(_, element) => {
-                loopFocus.value = element.checked
-                machine.controller.value.updateProps({ loopFocus: element.checked })
-              }}
+              {...loopFocusControl.props}
               type="checkbox"
             />
             <label for="loopFocus">loopFocus</label>

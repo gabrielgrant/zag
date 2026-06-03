@@ -12,6 +12,21 @@ interface Binding {
 const bindings = new WeakMap<Element, Binding>()
 const styleVariables = new WeakMap<Element, Map<string, string>>()
 
+function syncCompositeFocus(node: Element, props: ZagProps): VoidFunction {
+  if (props.role !== "menu") return () => {}
+  if (props["data-state"] !== "open") return () => {}
+  if (props.tabIndex !== 0) return () => {}
+
+  const frame = requestAnimationFrame(() => {
+    if (!node.isConnected) return
+    if (node.hasAttribute("hidden")) return
+    if (node.contains(node.ownerDocument.activeElement)) return
+    ;(node as HTMLElement).focus({ preventScroll: true })
+  })
+
+  return () => cancelAnimationFrame(frame)
+}
+
 function preserveStyleVariables(node: Element): VoidFunction {
   const style = (node as HTMLElement).style
   if (!style) return () => {}
@@ -61,6 +76,7 @@ export function bindProps(node: Element, props: ZagProps): VoidFunction {
   bindings.get(node)?.cleanup()
   const { eventProps } = splitProps(props)
   const stopPreservingStyleVariables = preserveStyleVariables(node)
+  const stopSyncingCompositeFocus = syncCompositeFocus(node, props)
 
   Object.entries(eventProps).forEach(([event, listener]) => {
     node.addEventListener(event, listener)
@@ -69,6 +85,7 @@ export function bindProps(node: Element, props: ZagProps): VoidFunction {
   const binding: Binding = {
     cleanup() {
       stopPreservingStyleVariables()
+      stopSyncingCompositeFocus()
       Object.entries(eventProps).forEach(([event, listener]) => {
         node.removeEventListener(event, listener)
       })

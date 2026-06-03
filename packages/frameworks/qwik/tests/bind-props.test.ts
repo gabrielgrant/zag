@@ -74,4 +74,31 @@ describe("bindProps", () => {
 
     expect(positioner.style.getPropertyValue("--x")).toBe("")
   })
+
+  test("refocuses an open composite menu after it is rebound", () => {
+    const content = document.createElement("ul")
+    const focus = vi.spyOn(content, "focus")
+    let frame: FrameRequestCallback | undefined
+
+    vi.stubGlobal("requestAnimationFrame", (fn: FrameRequestCallback) => {
+      frame = fn
+      return 1
+    })
+    vi.stubGlobal("cancelAnimationFrame", vi.fn())
+
+    document.body.append(content)
+
+    const cleanup = bindProps(content, {
+      role: "menu",
+      tabIndex: 0,
+      "data-state": "open",
+    })
+    frame?.(0)
+
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true })
+
+    cleanup()
+    content.remove()
+    vi.unstubAllGlobals()
+  })
 })
