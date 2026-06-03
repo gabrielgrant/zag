@@ -42,7 +42,7 @@ export function getWebServer(): WebServer {
     },
     qwik: {
       cwd: "./examples/qwik-ts",
-      command: `pnpm vite --port ${qwikPort}`,
+      command: `pnpm vite --mode ssr --port ${qwikPort}`,
       url: `http://localhost:${qwikPort}`,
       reuseExistingServer: !CI,
     },

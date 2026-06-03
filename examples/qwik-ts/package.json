@@ -4,19 +4,25 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite dev --port 3000",
-    "build": "vite build",
-    "preview": "vite preview",
+    "build": "qwik build",
+    "build.client": "vite build",
+    "build.preview": "vite build --ssr src/entry.preview.tsx",
+    "build.types": "tsc --incremental --noEmit",
+    "dev": "vite --mode ssr --port 3000",
+    "preview": "qwik build preview && vite preview",
+    "qwik": "qwik",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@qwik.dev/core": "2.0.0-beta.36",
     "@zag-js/menu": "workspace:*",
     "@zag-js/qwik": "workspace:*",
     "@zag-js/shared": "workspace:*"
   },
   "devDependencies": {
+    "@qwik.dev/core": "2.0.0-beta.36",
+    "@qwik.dev/router": "2.0.0-beta.36",
     "typescript": "6.0.3",
-    "vite": "8.0.14"
+    "vite": "8.0.14",
+    "vite-tsconfig-paths": "6.1.1"
   }
 }

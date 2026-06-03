@@ -1,4 +1,5 @@
 import { component$, useId, useSignal } from "@qwik.dev/core"
+import type { DocumentHead } from "@qwik.dev/router"
 import * as menu from "@zag-js/menu"
 import { createMachineSerializer, normalizeProps, useMachine$, usePart$ } from "@zag-js/qwik"
 
@@ -146,3 +147,7 @@ export default component$(() => {
     </>
   )
 })
+
+export const head: DocumentHead = {
+  title: "Menu | Zag Qwik Examples",
+}

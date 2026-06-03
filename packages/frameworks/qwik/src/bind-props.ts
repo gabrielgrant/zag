@@ -9,22 +9,52 @@ interface Binding {
   cleanup: VoidFunction
 }
 
+const boundProperty = "__zagQwikBound"
 const bindings = new WeakMap<Element, Binding>()
 const styleVariables = new WeakMap<Element, Map<string, string>>()
 
+interface BoundElement extends Element {
+  [boundProperty]?: true
+}
+
 function syncCompositeFocus(node: Element, props: ZagProps): VoidFunction {
   if (props.role !== "menu") return () => {}
-  if (props["data-state"] !== "open") return () => {}
-  if (props.tabIndex !== 0) return () => {}
 
-  const frame = requestAnimationFrame(() => {
+  let frame = 0
+  let timer = 0
+  let attempts = 0
+  const isOpen = () => node.getAttribute("data-state") === "open" || props["data-state"] === "open"
+  const focus = () => {
     if (!node.isConnected) return
+    if (!isOpen()) return
     if (node.hasAttribute("hidden")) return
     if (node.contains(node.ownerDocument.activeElement)) return
-    ;(node as HTMLElement).focus({ preventScroll: true })
-  })
+    const element = node as HTMLElement
+    if (element.tabIndex < 0) element.tabIndex = 0
+    element.focus({ preventScroll: true })
+    attempts += 1
+    if (node.ownerDocument.activeElement === node) return
+    if (attempts >= 3) return
+    timer = window.setTimeout(() => {
+      frame = requestAnimationFrame(focus)
+    })
+  }
+  const scheduleFocus = () => {
+    cancelAnimationFrame(frame)
+    clearTimeout(timer)
+    attempts = 0
+    frame = requestAnimationFrame(focus)
+  }
 
-  return () => cancelAnimationFrame(frame)
+  const observer = new MutationObserver(scheduleFocus)
+  observer.observe(node, { attributeFilter: ["data-state", "hidden"] })
+  scheduleFocus()
+
+  return () => {
+    observer.disconnect()
+    cancelAnimationFrame(frame)
+    clearTimeout(timer)
+  }
 }
 
 function preserveStyleVariables(node: Element): VoidFunction {
@@ -81,6 +111,10 @@ export function bindProps(node: Element, props: ZagProps): VoidFunction {
   Object.entries(eventProps).forEach(([event, listener]) => {
     node.addEventListener(event, listener)
   })
+  Object.defineProperty(node, boundProperty, {
+    configurable: true,
+    value: true,
+  })
 
   const binding: Binding = {
     cleanup() {
@@ -89,6 +123,7 @@ export function bindProps(node: Element, props: ZagProps): VoidFunction {
       Object.entries(eventProps).forEach(([event, listener]) => {
         node.removeEventListener(event, listener)
       })
+      delete (node as BoundElement)[boundProperty]
       if (bindings.get(node) === binding) bindings.delete(node)
     },
   }

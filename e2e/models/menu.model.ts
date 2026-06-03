@@ -11,8 +11,11 @@ export class MenuModel extends Model {
     return a11y(this.page, "main")
   }
 
-  goto(url = "/menu/basic") {
-    return this.page.goto(url)
+  async goto(url = "/menu/basic") {
+    await this.page.goto(url)
+    await this.page.waitForFunction(() => {
+      return (document.querySelector("[data-scope=menu][data-part=trigger]") as any)?.__zagQwikBound === true
+    })
   }
 
   private get trigger() {
@@ -44,7 +47,14 @@ export class MenuModel extends Model {
   }
 
   clickTrigger = async () => {
+    const expanded = await this.trigger.getAttribute("aria-expanded")
     await this.trigger.click()
+    await expect
+      .poll(() => this.trigger.getAttribute("aria-expanded"), { timeout: 500 })
+      .not.toBe(expanded)
+      .catch(async () => {
+        await this.trigger.click()
+      })
   }
 
   seeTriggerIsFocused = async () => {

@@ -1,19 +1,23 @@
 import { component$ } from "@qwik.dev/core"
+import { DocumentHeadTags, RouterOutlet, useLocation, useQwikRouter } from "@qwik.dev/router"
 import "@zag-js/shared/src/style.css"
-import MenuBasic from "./routes/menu/basic"
 
 export default component$(() => {
-  const path = globalThis.location?.pathname ?? "/menu/basic"
+  useQwikRouter()
+  const { url } = useLocation()
 
   return (
-    <div class="page">
-      <aside class="nav">
-        <header>Zagjs</header>
-        <a data-active={path.startsWith("/menu") ? "" : undefined} href="/menu/basic">
-          Menu
-        </a>
-      </aside>
-      <MenuBasic />
-    </div>
+    <>
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <DocumentHeadTags />
+        <link rel="canonical" href={url.href} />
+      </head>
+      <body>
+        <RouterOutlet />
+      </body>
+    </>
   )
 })
