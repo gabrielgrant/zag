@@ -33,7 +33,7 @@ export class QwikMachine<T extends MachineSchema> extends VanillaMachine<T> {
 }
 
 export interface UseMachineOptions<T extends MachineSchema> {
-  props?: Partial<T["props"]>
+  props?: Partial<T["props"]> | (() => Partial<T["props"]>)
   snapshot?: VanillaMachineSnapshot<T>
 }
 

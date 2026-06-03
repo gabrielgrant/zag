@@ -13,6 +13,7 @@ export function getWebServer(): WebServer {
   const vuePort = process.env.PORT ?? "3001"
   const solidPort = process.env.PORT ?? "3002"
   const sveltePort = process.env.PORT ?? "3003"
+  const qwikPort = process.env.PORT ?? "3014"
 
   const frameworks: Record<string, WebServer> = {
     react: {
@@ -39,6 +40,12 @@ export function getWebServer(): WebServer {
       url: `http://localhost:${sveltePort}`,
       reuseExistingServer: !CI,
     },
+    qwik: {
+      cwd: "./examples/qwik-ts",
+      command: `pnpm vite --port ${qwikPort}`,
+      url: `http://localhost:${qwikPort}`,
+      reuseExistingServer: !CI,
+    },
   }
 
   return frameworks[framework]
@@ -49,7 +56,7 @@ const webServer = getWebServer()
 export default defineConfig({
   testDir: "./e2e",
   outputDir: "./e2e/results",
-  testMatch: "*.e2e.ts",
+  testMatch: process.env.FRAMEWORK === "qwik" ? "menu.e2e.ts" : "*.e2e.ts",
   fullyParallel: !CI,
   timeout: 30_000,
   expect: { timeout: 10_000 },
