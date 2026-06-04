@@ -1,4 +1,4 @@
-import { component$, useId, useSignal } from "@qwik.dev/core"
+import { $, component$, useId, useSignal } from "@qwik.dev/core"
 import type { DocumentHead } from "@qwik.dev/router"
 import * as menu from "@zag-js/menu"
 import { createMachineSerializer, normalizeProps, useConnectedParts, useMachine$, usePart$ } from "@zag-js/qwik"
@@ -26,18 +26,40 @@ export default component$(() => {
     }),
   )
 
-  const parts = useConnectedParts(machine, menu.connect, normalizeProps)
+  const parts = useConnectedParts(
+    machine,
+    menu.connect(machine.controller.value.service, normalizeProps),
+    $(() => menu.connect(machine.controller.value.service, normalizeProps)),
+  )
   const { api } = parts
-  const trigger = parts.bind$((api) => api.getTriggerProps(), api.getTriggerProps())
-  const positioner = parts.bind$((api) => api.getPositionerProps(), api.getPositionerProps())
-  const content = parts.bind$((api) => api.getContentProps(), api.getContentProps())
-  const edit = parts.bind$((api) => api.getItemProps({ value: "edit" }), api.getItemProps({ value: "edit" }))
+  const trigger = parts.bind$(
+    $((api) => api.getTriggerProps()),
+    api.getTriggerProps(),
+  )
+  const positioner = parts.bind$(
+    $((api) => api.getPositionerProps()),
+    api.getPositionerProps(),
+  )
+  const content = parts.bind$(
+    $((api) => api.getContentProps()),
+    api.getContentProps(),
+  )
+  const edit = parts.bind$(
+    $((api) => api.getItemProps({ value: "edit" })),
+    api.getItemProps({ value: "edit" }),
+  )
   const duplicate = parts.bind$(
-    (api) => api.getItemProps({ value: "duplicate" }),
+    $((api) => api.getItemProps({ value: "duplicate" })),
     api.getItemProps({ value: "duplicate" }),
   )
-  const remove = parts.bind$((api) => api.getItemProps({ value: "delete" }), api.getItemProps({ value: "delete" }))
-  const exportItem = parts.bind$((api) => api.getItemProps({ value: "export" }), api.getItemProps({ value: "export" }))
+  const remove = parts.bind$(
+    $((api) => api.getItemProps({ value: "delete" })),
+    api.getItemProps({ value: "delete" }),
+  )
+  const exportItem = parts.bind$(
+    $((api) => api.getItemProps({ value: "export" })),
+    api.getItemProps({ value: "export" }),
+  )
   const items = [edit, duplicate, remove, exportItem]
   const closeOnSelectControl = usePart$(
     () => ({

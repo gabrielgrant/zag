@@ -1,4 +1,4 @@
-import type { Machine, MachineSchema, Service } from "@zag-js/core"
+import type { Machine, MachineSchema } from "@zag-js/core"
 import {
   implicit$FirstArg,
   useSignal,
@@ -97,7 +97,7 @@ export interface ZagPart {
 
 export interface ConnectedParts<A> {
   api: A
-  bind$: (getProps: (api: A) => ZagProps, props: ZagProps) => ZagPart
+  bind$: (getProps: QRL<(api: A) => ZagProps>, props: ZagProps) => ZagPart
 }
 
 export function usePartQrl<T extends MachineSchema>(
@@ -124,13 +124,12 @@ export function usePartQrl<T extends MachineSchema>(
   }
 }
 
-export function useConnectedParts<T extends MachineSchema, A, N>(
+export function useConnectedParts<T extends MachineSchema, A>(
   machine: QwikMachineSignal<T>,
-  connect: (service: Service<T>, normalize: N) => A,
-  normalize: N,
+  api: A,
+  getApi: QRL<() => A>,
 ): ConnectedParts<A> {
   machine.revision.value
-  const api = connect(machine.controller.value.service, normalize)
 
   function bindQrl(getProps: QRL<(api: A) => ZagProps>, props: ZagProps): ZagPart {
     machine.revision.value
@@ -141,7 +140,7 @@ export function useConnectedParts<T extends MachineSchema, A, N>(
         track(() => machine.revision.value)
         const node = ref.value
         if (!node) return
-        const nextApi = connect(machine.controller.value.service, normalize)
+        const nextApi = await getApi()
         cleanup(machine.controller.value.bind(node, await getProps(nextApi)))
       },
       { strategy: "document-ready" },
@@ -155,7 +154,7 @@ export function useConnectedParts<T extends MachineSchema, A, N>(
 
   return {
     api,
-    bind$: implicit$FirstArg(bindQrl),
+    bind$: bindQrl,
   }
 }
 
