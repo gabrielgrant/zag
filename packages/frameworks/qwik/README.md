@@ -51,10 +51,17 @@ export default component$(() => {
 })
 ```
 
-`usePart$()` returns JSX-safe static props and a declarative ref. Its third argument supplies the current props for
-synchronous JSX rendering. The QRL factory recreates props after resume so the adapter can bind generated function props
-as native listeners when the element becomes visible, refresh them after machine publishes, and clean them up on
-rerender or unmount.
+`usePart$()` returns JSX-safe static props and a declarative ref for one DOM element. Its third argument supplies the
+current props for synchronous JSX rendering; function props are removed from that JSX spread because Qwik would
+otherwise attach them through its event QRL edge. The QRL factory is used separately inside a visible task so the
+adapter can recreate the full props after resume, bind generated function props as native listeners when the element
+becomes visible, refresh those native listeners after machine publishes, and clean them up on rerender or unmount.
+
+The third argument and the QRL factory intentionally calculate the same part props from two different timing contexts.
+The third argument keeps server/client JSX attributes current for the render that is happening now. The QRL factory
+gives the browser a serializable way to rebuild the latest event handlers against the live controller after Qwik
+resumes. `usePart$()` does not imperatively patch static attributes after each publish; static attributes update through
+normal Qwik rendering.
 
 When Qwik rebinds an open composite menu, the adapter also restores focus to the content node if focus is not already
 inside it. This keeps menu keyboard and typeahead flows aligned with Zag's runtime focus effects without requiring app
@@ -72,7 +79,7 @@ restrictive to close over the live Zag controller.
 The adapter handles that split internally:
 
 1. `useMachine$()` creates a serializer-backed `QwikMachine`.
-2. `usePart$()` spreads static attributes through JSX and binds function props as native listeners.
+2. `usePart$()` spreads static attributes through JSX and binds generated function props as native listeners.
 3. One live controller handles the complete pointer and click gesture chain.
 4. Open menu content is refocused after binding when Qwik's DOM timing races Zag's focus effects.
 5. Machine publishes are coalesced with `requestAnimationFrame()` before Qwik invalidation.
@@ -89,7 +96,8 @@ poll private adapter state or retry the first gesture.
 
 Parity is **partially achieved**. App code does not write `addEventListener`, refresh snapshots, maintain registries, or
 build sync bridges. The remaining Qwik-specific ceremony is one `usePart$(factory, machine, props)` call and one `ref`
-per interactive part.
+per bound element. Most bound elements are interactive parts, but some static-looking parts still need binding for
+runtime DOM coordination.
 
 That step cannot be hidden behind a normal prop spread: the adapter needs the DOM element, current static props for
 synchronous render, and a serializable QRL factory so generated handlers can be recreated after resume. A future
@@ -102,6 +110,6 @@ not remove Qwik's need for a declarative element binding.
   `splitProps(props).staticProps`.
 - Bind popper positioners with `usePart$()` even though they do not contain handlers. Floating UI writes runtime CSS
   variables to those nodes, and the binding preserves them across Qwik rerenders.
-- Bind menu content with `usePart$()` so the adapter can refresh event handlers and preserve keyboard focus after Qwik
-  updates.
+- Bind menu content with `usePart$()` so the adapter can refresh native event handlers and preserve keyboard focus after
+  Qwik updates.
 - Use `@qwik.dev/core` v2. The serializer primitive is not available from the Qwik v1 package.
