@@ -103,9 +103,19 @@ export interface ConnectedParts<T extends MachineSchema, A extends object> {
   machine: QwikMachineSignal<T>
 }
 
-function callQrlSync<Args extends unknown[], Result>(qrl: QRL<(...args: Args) => Result>, ...args: Args): Result {
-  const fn = qrl.resolved ?? qrl
-  return fn(...args) as Result
+function callQrlRender<Args extends unknown[], Result>(
+  qrl: QRL<(...args: Args) => Result>,
+  ...args: Args
+): Result | undefined {
+  if (qrl.resolved) {
+    return qrl.resolved(...args) as Result
+  }
+
+  if (typeof window === "undefined") {
+    return qrl(...args) as Result
+  }
+
+  return
 }
 
 export function usePartQrl<T extends MachineSchema>(
@@ -115,20 +125,24 @@ export function usePartQrl<T extends MachineSchema>(
 ): ZagPart {
   machine.revision.value
   const ref = useSignal<Element>()
+  const staticProps = useSignal<ZagProps>(splitProps(props ?? callQrlRender(getProps) ?? {}).staticProps)
 
   useVisibleTask$(
     async ({ track, cleanup }) => {
       track(() => machine.revision.value)
       const node = ref.value
       if (!node) return
-      cleanup(machine.controller.value.bind(node, await getProps()))
+      const resolvedGetProps = await getProps.resolve()
+      const nextProps = resolvedGetProps()
+      staticProps.value = splitProps(props ?? nextProps).staticProps
+      cleanup(machine.controller.value.bind(node, nextProps))
     },
     { strategy: "document-ready" },
   )
 
   return {
     ref,
-    props: splitProps(props ?? callQrlSync(getProps)).staticProps,
+    props: getProps.resolved ? splitProps(props ?? getProps.resolved()).staticProps : staticProps.value,
   }
 }
 
@@ -137,9 +151,23 @@ export function useConnectedPartsQrl<T extends MachineSchema, A extends object>(
   machine: QwikMachineSignal<T>,
 ): ConnectedParts<T, A> {
   machine.revision.value
+  const api = useSignal<NoSerialize<A>>()
+  const nextApi = callQrlRender(getApi)
+  if (nextApi) {
+    api.value = noSerialize(nextApi) as NoSerialize<A>
+  }
+
+  useVisibleTask$(
+    async ({ track }) => {
+      track(() => machine.revision.value)
+      const resolvedGetApi = await getApi.resolve()
+      api.value = noSerialize(resolvedGetApi()) as NoSerialize<A>
+    },
+    { strategy: "document-ready" },
+  )
 
   return {
-    api: noSerialize(callQrlSync(getApi)) as NoSerialize<A> as A,
+    api: api.value as A,
     getApi,
     machine,
   }
@@ -151,21 +179,25 @@ export function bindPartQrl<T extends MachineSchema, A extends object>(
 ): ZagPart {
   parts.machine.revision.value
   const ref = useSignal<Element>()
+  const initialProps = parts.api ? callQrlRender(getProps, parts.api) : undefined
+  const staticProps = useSignal<ZagProps>(splitProps(initialProps ?? {}).staticProps)
 
   useVisibleTask$(
     async ({ track, cleanup }) => {
       track(() => parts.machine.revision.value)
       const node = ref.value
       if (!node) return
-      const nextApi = await parts.getApi()
-      cleanup(parts.machine.controller.value.bind(node, await getProps(nextApi)))
+      const [resolvedGetApi, resolvedGetProps] = await Promise.all([parts.getApi.resolve(), getProps.resolve()])
+      const nextProps = resolvedGetProps(resolvedGetApi())
+      staticProps.value = splitProps(nextProps).staticProps
+      cleanup(parts.machine.controller.value.bind(node, nextProps))
     },
     { strategy: "document-ready" },
   )
 
   return {
     ref,
-    props: splitProps(callQrlSync(getProps, parts.api)).staticProps,
+    props: getProps.resolved ? splitProps(getProps.resolved(parts.api)).staticProps : staticProps.value,
   }
 }
 

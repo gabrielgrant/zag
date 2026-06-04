@@ -53,10 +53,12 @@ export function getWebServer(): WebServer {
 
 const webServer = getWebServer()
 
+const qwikTestMatch = ["menu.e2e.ts", "context-menu.e2e.ts"]
+
 export default defineConfig({
   testDir: "./e2e",
   outputDir: "./e2e/results",
-  testMatch: process.env.FRAMEWORK === "qwik" ? "menu.e2e.ts" : "*.e2e.ts",
+  testMatch: process.env.FRAMEWORK === "qwik" ? qwikTestMatch : "*.e2e.ts",
   fullyParallel: !CI,
   timeout: 30_000,
   expect: { timeout: 10_000 },

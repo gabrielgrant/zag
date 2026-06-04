@@ -5,6 +5,7 @@ export default component$(() => {
   return (
     <main>
       <a href="/menu/basic">Menu basic</a>
+      <a href="/context-menu/basic">Context menu basic</a>
     </main>
   )
 })

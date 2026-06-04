@@ -34,7 +34,8 @@ export default component$(() => {
   )
 
   const parts = useConnectedParts$(() => menu.connect(machine.controller.value.service, normalizeProps), machine)
-  const { api } = parts
+  const api = parts.api
+  const indicatorProps = api?.getIndicatorProps?.() ?? {}
   const trigger = bindPart$((api) => api.getTriggerProps(), parts)
   const positioner = bindPart$((api) => api.getPositionerProps(), parts)
   const content = bindPart$((api) => api.getContentProps(), parts)
@@ -68,9 +69,9 @@ export default component$(() => {
       <main>
         <div>
           <button ref={trigger.ref} {...trigger.props}>
-            Actions <span {...api.getIndicatorProps()}>▾</span>
+            Actions <span {...indicatorProps}>▾</span>
           </button>
-          <div ref={positioner.ref} hidden={!api.open} {...positioner.props}>
+          <div ref={positioner.ref} {...positioner.props}>
             <ul ref={content.ref} {...content.props}>
               {menuItems.map((item, index) => (
                 <li key={item.value} ref={items[index].ref} {...items[index].props}>

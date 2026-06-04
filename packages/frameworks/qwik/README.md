@@ -126,6 +126,9 @@ make this even smaller, but it would not remove Qwik's need for a declarative el
   directly after `splitProps(props).staticProps`.
 - Bind popper positioners with `bindPart$()` or `usePart$()` even though they do not contain handlers. Floating UI
   writes runtime CSS variables to those nodes, and the binding preserves them across Qwik rerenders.
+- Let bound menu/content props own their visibility attrs. Do not mirror `api.open` onto `hidden` for bound
+  positioners or content nodes; that can race the adapter's client-side reconnect path and leave stale visibility
+  state behind.
 - Bind menu content with `bindPart$()` or `usePart$()` so the adapter can refresh native event handlers and preserve
   keyboard focus after Qwik updates.
 - Do not pass imported Zag module namespaces, connected APIs, or other function-heavy objects as data arguments to QRL
