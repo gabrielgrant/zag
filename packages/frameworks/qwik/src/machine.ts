@@ -1,8 +1,10 @@
 import type { Machine, MachineSchema } from "@zag-js/core"
 import {
   implicit$FirstArg,
+  noSerialize,
   useSignal,
   useVisibleTask$,
+  type NoSerialize,
   type QRL,
   type ReadonlySignal,
   type Signal,
@@ -95,9 +97,15 @@ export interface ZagPart {
   ref: Signal<Element | undefined>
 }
 
-export interface ConnectedParts<A> {
+export interface ConnectedParts<T extends MachineSchema, A extends object> {
   api: A
-  bind$: (getProps: QRL<(api: A) => ZagProps>, props: ZagProps) => ZagPart
+  getApi: QRL<() => A>
+  machine: QwikMachineSignal<T>
+}
+
+function callQrlSync<Args extends unknown[], Result>(qrl: QRL<(...args: Args) => Result>, ...args: Args): Result {
+  const fn = qrl.resolved ?? qrl
+  return fn(...args) as Result
 }
 
 export function usePartQrl<T extends MachineSchema>(
@@ -124,38 +132,43 @@ export function usePartQrl<T extends MachineSchema>(
   }
 }
 
-export function useConnectedParts<T extends MachineSchema, A>(
-  machine: QwikMachineSignal<T>,
-  api: A,
+export function useConnectedPartsQrl<T extends MachineSchema, A extends object>(
   getApi: QRL<() => A>,
-): ConnectedParts<A> {
+  machine: QwikMachineSignal<T>,
+): ConnectedParts<T, A> {
   machine.revision.value
 
-  function bindQrl(getProps: QRL<(api: A) => ZagProps>, props: ZagProps): ZagPart {
-    machine.revision.value
-    const ref = useSignal<Element>()
-
-    useVisibleTask$(
-      async ({ track, cleanup }) => {
-        track(() => machine.revision.value)
-        const node = ref.value
-        if (!node) return
-        const nextApi = await getApi()
-        cleanup(machine.controller.value.bind(node, await getProps(nextApi)))
-      },
-      { strategy: "document-ready" },
-    )
-
-    return {
-      ref,
-      props: splitProps(props).staticProps,
-    }
-  }
-
   return {
-    api,
-    bind$: bindQrl,
+    api: noSerialize(callQrlSync(getApi)) as NoSerialize<A> as A,
+    getApi,
+    machine,
   }
 }
 
+export function bindPartQrl<T extends MachineSchema, A extends object>(
+  getProps: QRL<(api: A) => ZagProps>,
+  parts: ConnectedParts<T, A>,
+): ZagPart {
+  parts.machine.revision.value
+  const ref = useSignal<Element>()
+
+  useVisibleTask$(
+    async ({ track, cleanup }) => {
+      track(() => parts.machine.revision.value)
+      const node = ref.value
+      if (!node) return
+      const nextApi = await parts.getApi()
+      cleanup(parts.machine.controller.value.bind(node, await getProps(nextApi)))
+    },
+    { strategy: "document-ready" },
+  )
+
+  return {
+    ref,
+    props: splitProps(callQrlSync(getProps, parts.api)).staticProps,
+  }
+}
+
+export const useConnectedParts$ = implicit$FirstArg(useConnectedPartsQrl)
+export const bindPart$ = implicit$FirstArg(bindPartQrl)
 export const usePart$ = implicit$FirstArg(usePartQrl)
