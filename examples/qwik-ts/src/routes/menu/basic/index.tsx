@@ -1,7 +1,7 @@
 import { component$, useId, useSignal } from "@qwik.dev/core"
 import type { DocumentHead } from "@qwik.dev/router"
 import * as menu from "@zag-js/menu"
-import { createMachineSerializer, normalizeProps, useMachine$, usePart$ } from "@zag-js/qwik"
+import { createMachineSerializer, normalizeProps, useConnectedParts, useMachine$, usePart$ } from "@zag-js/qwik"
 import { StateVisualizer } from "~/components/state-visualizer"
 import { Toolbar } from "~/components/toolbar"
 
@@ -26,42 +26,18 @@ export default component$(() => {
     }),
   )
 
-  const api = menu.connect(machine.controller.value.service, normalizeProps)
-  const trigger = usePart$(
-    () => menu.connect(machine.controller.value.service, normalizeProps).getTriggerProps(),
-    machine,
-    api.getTriggerProps(),
-  )
-  const positioner = usePart$(
-    () => menu.connect(machine.controller.value.service, normalizeProps).getPositionerProps(),
-    machine,
-    api.getPositionerProps(),
-  )
-  const content = usePart$(
-    () => menu.connect(machine.controller.value.service, normalizeProps).getContentProps(),
-    machine,
-    api.getContentProps(),
-  )
-  const edit = usePart$(
-    () => menu.connect(machine.controller.value.service, normalizeProps).getItemProps({ value: "edit" }),
-    machine,
-    api.getItemProps({ value: "edit" }),
-  )
-  const duplicate = usePart$(
-    () => menu.connect(machine.controller.value.service, normalizeProps).getItemProps({ value: "duplicate" }),
-    machine,
+  const parts = useConnectedParts(machine, menu.connect, normalizeProps)
+  const { api } = parts
+  const trigger = parts.bind$((api) => api.getTriggerProps(), api.getTriggerProps())
+  const positioner = parts.bind$((api) => api.getPositionerProps(), api.getPositionerProps())
+  const content = parts.bind$((api) => api.getContentProps(), api.getContentProps())
+  const edit = parts.bind$((api) => api.getItemProps({ value: "edit" }), api.getItemProps({ value: "edit" }))
+  const duplicate = parts.bind$(
+    (api) => api.getItemProps({ value: "duplicate" }),
     api.getItemProps({ value: "duplicate" }),
   )
-  const remove = usePart$(
-    () => menu.connect(machine.controller.value.service, normalizeProps).getItemProps({ value: "delete" }),
-    machine,
-    api.getItemProps({ value: "delete" }),
-  )
-  const exportItem = usePart$(
-    () => menu.connect(machine.controller.value.service, normalizeProps).getItemProps({ value: "export" }),
-    machine,
-    api.getItemProps({ value: "export" }),
-  )
+  const remove = parts.bind$((api) => api.getItemProps({ value: "delete" }), api.getItemProps({ value: "delete" }))
+  const exportItem = parts.bind$((api) => api.getItemProps({ value: "export" }), api.getItemProps({ value: "export" }))
   const items = [edit, duplicate, remove, exportItem]
   const closeOnSelectControl = usePart$(
     () => ({

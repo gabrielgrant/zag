@@ -1,4 +1,4 @@
-import type { Machine, MachineSchema } from "@zag-js/core"
+import type { Machine, MachineSchema, Service } from "@zag-js/core"
 import {
   implicit$FirstArg,
   useSignal,
@@ -95,6 +95,11 @@ export interface ZagPart {
   ref: Signal<Element | undefined>
 }
 
+export interface ConnectedParts<A> {
+  api: A
+  bind$: (getProps: (api: A) => ZagProps, props: ZagProps) => ZagPart
+}
+
 export function usePartQrl<T extends MachineSchema>(
   getProps: QRL<() => ZagProps>,
   machine: QwikMachineSignal<T>,
@@ -116,6 +121,41 @@ export function usePartQrl<T extends MachineSchema>(
   return {
     ref,
     props: splitProps(props).staticProps,
+  }
+}
+
+export function useConnectedParts<T extends MachineSchema, A, N>(
+  machine: QwikMachineSignal<T>,
+  connect: (service: Service<T>, normalize: N) => A,
+  normalize: N,
+): ConnectedParts<A> {
+  machine.revision.value
+  const api = connect(machine.controller.value.service, normalize)
+
+  function bindQrl(getProps: QRL<(api: A) => ZagProps>, props: ZagProps): ZagPart {
+    machine.revision.value
+    const ref = useSignal<Element>()
+
+    useVisibleTask$(
+      async ({ track, cleanup }) => {
+        track(() => machine.revision.value)
+        const node = ref.value
+        if (!node) return
+        const nextApi = connect(machine.controller.value.service, normalize)
+        cleanup(machine.controller.value.bind(node, await getProps(nextApi)))
+      },
+      { strategy: "document-ready" },
+    )
+
+    return {
+      ref,
+      props: splitProps(props).staticProps,
+    }
+  }
+
+  return {
+    api,
+    bind$: implicit$FirstArg(bindQrl),
   }
 }
 
