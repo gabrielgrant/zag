@@ -52,13 +52,6 @@ export default component$(() => {
       },
     }),
     machine,
-    {
-      onInput(event: Event) {
-        const checked = (event.currentTarget as HTMLInputElement).checked
-        closeOnSelect.value = checked
-        machine.controller.value.updateProps({ closeOnSelect: checked })
-      },
-    },
   )
   const loopFocusControl = usePart$(
     () => ({
@@ -69,13 +62,6 @@ export default component$(() => {
       },
     }),
     machine,
-    {
-      onInput(event: Event) {
-        const checked = (event.currentTarget as HTMLInputElement).checked
-        loopFocus.value = checked
-        machine.controller.value.updateProps({ loopFocus: checked })
-      },
-    },
   )
   return (
     <>

@@ -43,19 +43,25 @@ declarative ref for one DOM element. Function props are removed from the JSX spr
 them through its asynchronous event QRL edge. The adapter binds those generated function props as native listeners when
 the element becomes visible, refreshes them after machine publishes, and cleans them up on rerender or unmount.
 
-The helper pair removes the repeated "QRL factory plus current props" shape that `usePart$()` requires:
+The helper pair keeps connected Zag APIs ergonomic when several parts are derived from the same `api`. For custom
+controls or isolated props, `usePart$()` can bind a single QRL factory directly:
 
 ```tsx
-const api = menu.connect(machine.controller.value.service, normalizeProps)
-const trigger = usePart$(
-  () => menu.connect(machine.controller.value.service, normalizeProps).getTriggerProps(),
+const closeOnSelectControl = usePart$(
+  () => ({
+    onInput(event: Event) {
+      const checked = (event.currentTarget as HTMLInputElement).checked
+      closeOnSelect.value = checked
+      machine.controller.value.updateProps({ closeOnSelect: checked })
+    },
+  }),
   machine,
-  api.getTriggerProps(),
 )
 ```
 
-`usePart$()` is still useful for custom controls or isolated props, but `useConnectedParts$()` plus `bindPart$()` is the
-preferred shape when several parts come from the same connected Zag API.
+`usePart$()` synchronously evaluates that QRL for the current JSX render, then uses the same QRL inside the visible task
+to rebuild handlers after resume. Keep the first argument as a function so Qwik can turn it into a QRL; do not pass an
+object full of functions as ordinary runtime data.
 
 Keep imported Zag modules inside QRL closures instead of passing them as runtime data:
 

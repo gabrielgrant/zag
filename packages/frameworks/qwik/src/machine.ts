@@ -111,7 +111,7 @@ function callQrlSync<Args extends unknown[], Result>(qrl: QRL<(...args: Args) =>
 export function usePartQrl<T extends MachineSchema>(
   getProps: QRL<() => ZagProps>,
   machine: QwikMachineSignal<T>,
-  props: ZagProps,
+  props?: ZagProps,
 ): ZagPart {
   machine.revision.value
   const ref = useSignal<Element>()
@@ -128,7 +128,7 @@ export function usePartQrl<T extends MachineSchema>(
 
   return {
     ref,
-    props: splitProps(props).staticProps,
+    props: splitProps(props ?? callQrlSync(getProps)).staticProps,
   }
 }
 
