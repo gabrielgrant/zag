@@ -3,7 +3,7 @@
     "allowJs": true,
     "target": "es2020",
     "module": "esnext",
-    "lib": ["es2022", "DOM", "WebWorker", "DOM.Iterable"],
+    "lib": ["es2023", "DOM", "WebWorker", "DOM.Iterable"],
     "jsx": "react-jsx",
     "jsxImportSource": "@qwik.dev/core",
     "strict": true,

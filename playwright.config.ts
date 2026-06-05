@@ -45,6 +45,7 @@ export function getWebServer(): WebServer {
       command: `pnpm qwik build preview && pnpm vite preview --port ${qwikPort}`,
       url: `http://localhost:${qwikPort}`,
       reuseExistingServer: !CI,
+      timeout: 120_000,
     },
   }
 
