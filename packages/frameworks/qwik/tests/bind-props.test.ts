@@ -11,6 +11,62 @@ describe("splitProps", () => {
 })
 
 describe("bindProps", () => {
+  test("syncs static props onto the bound element immediately", () => {
+    const content = document.createElement("ul")
+
+    bindProps(content, {
+      role: "menu",
+      hidden: true,
+      tabIndex: -1,
+      "aria-hidden": true,
+      "data-state": "closed",
+    })
+
+    expect(content.role).toBe("menu")
+    expect(content.hidden).toBe(true)
+    expect(content.tabIndex).toBe(-1)
+    expect(content.getAttribute("aria-hidden")).toBe("true")
+    expect(content.getAttribute("data-state")).toBe("closed")
+
+    bindProps(content, {
+      role: "menu",
+      tabIndex: 0,
+      "aria-hidden": false,
+      "data-state": "open",
+    })
+
+    expect(content.hidden).toBe(false)
+    expect(content.hasAttribute("hidden")).toBe(false)
+    expect(content.tabIndex).toBe(0)
+    expect(content.getAttribute("aria-hidden")).toBe("false")
+    expect(content.getAttribute("data-state")).toBe("open")
+  })
+
+  test("removes stale static props after rebinding", () => {
+    const item = document.createElement("div")
+
+    bindProps(item, {
+      id: "first",
+      "data-highlighted": "",
+      "aria-disabled": true,
+    })
+    bindProps(item, { id: "first" })
+
+    expect(item.hasAttribute("data-highlighted")).toBe(false)
+    expect(item.hasAttribute("aria-disabled")).toBe(false)
+  })
+
+  test("removing stale numeric props restores the native default", () => {
+    const content = document.createElement("ul")
+
+    bindProps(content, { tabIndex: 0 })
+    expect(content.tabIndex).toBe(0)
+
+    bindProps(content, {})
+    expect(content.hasAttribute("tabindex")).toBe(false)
+    expect(content.tabIndex).toBe(-1)
+  })
+
   test("keeps conditional preventDefault authored by the machine handler", () => {
     const button = document.createElement("button")
     const cleanup = bindProps(button, {
@@ -59,20 +115,48 @@ describe("bindProps", () => {
 
   test("preserves runtime CSS variables across declarative style replacements", async () => {
     const positioner = document.createElement("div")
-    const cleanup = bindProps(positioner, {})
+    const cleanup = bindProps(positioner, { style: { transform: "translate3d(var(--x), var(--y), 0)" } })
 
     positioner.style.setProperty("--x", "24px")
     await Promise.resolve()
-    positioner.setAttribute("style", "transform: translate3d(var(--x), var(--y), 0)")
+    bindProps(positioner, { style: { position: "absolute", transform: "translate3d(var(--x), var(--y), 0)" } })
     await Promise.resolve()
 
     expect(positioner.style.getPropertyValue("--x")).toBe("24px")
+    expect(positioner.style.position).toBe("absolute")
 
     cleanup()
-    positioner.setAttribute("style", "transform: none")
+    bindProps(positioner, { style: { transform: "none" } })
     await Promise.resolve()
 
-    expect(positioner.style.getPropertyValue("--x")).toBe("")
+    expect(positioner.style.getPropertyValue("--x")).toBe("24px")
+    expect(positioner.style.position).toBe("")
+  })
+
+  test("preserves runtime CSS variables across string style replacements", async () => {
+    const positioner = document.createElement("div")
+
+    const cleanup = bindProps(positioner, { style: "transform: translate3d(var(--x), var(--y), 0)" })
+    positioner.style.setProperty("--x", "24px")
+    await Promise.resolve()
+
+    bindProps(positioner, { style: "transform: none" })
+
+    expect(positioner.style.transform).toBe("none")
+    expect(positioner.style.getPropertyValue("--x")).toBe("24px")
+
+    cleanup()
+  })
+
+  test("removes stale string style props when rebinding object styles", () => {
+    const positioner = document.createElement("div")
+
+    bindProps(positioner, { style: "transform: none; color: red" })
+    bindProps(positioner, { style: { position: "absolute" } })
+
+    expect(positioner.style.position).toBe("absolute")
+    expect(positioner.style.transform).toBe("")
+    expect(positioner.style.color).toBe("")
   })
 
   test("refocuses an open composite menu after it is rebound", () => {

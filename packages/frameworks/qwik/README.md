@@ -41,7 +41,9 @@ export default component$(() => {
 live controller after Qwik resumes. `bindPart$()` uses that connected state to return JSX-safe static props and a
 declarative ref for one DOM element. Function props are removed from the JSX spread because Qwik would otherwise attach
 them through its asynchronous event QRL edge. The adapter binds those generated function props as native listeners when
-the element becomes visible, refreshes them after machine publishes, and cleans them up on rerender or unmount.
+the element becomes visible, refreshes them after machine publishes, and cleans them up on rerender or unmount. The same
+binding pass also mirrors Zag's current static attributes and DOM properties onto the element, so native machine
+handlers do not have to wait for Qwik's next render before focus, visibility, and aria state are correct.
 
 The helper pair keeps connected Zag APIs ergonomic when several parts are derived from the same `api`. For custom
 controls or isolated props, `usePart$()` can bind a single QRL factory directly:
@@ -96,16 +98,18 @@ The adapter handles that split internally:
 2. `useConnectedParts$()` produces current render props and a serializable reconnect QRL for one connected Zag API.
 3. `bindPart$()` spreads static attributes through JSX and binds generated function props as native listeners.
 4. One live controller handles the complete pointer and click gesture chain.
-5. Open menu content is refocused after binding when Qwik's DOM timing races Zag's focus effects.
-6. Machine publishes are coalesced with `requestAnimationFrame()` before Qwik invalidation.
-7. Qwik v2 serializes the durable state and bindable context snapshot when a boundary requires it.
+5. The binding pass refreshes the same static attributes on the DOM node immediately after each machine publish.
+6. Open menu content is refocused after binding when Qwik's DOM timing races Zag's focus effects.
+7. Machine publishes are coalesced with `requestAnimationFrame()` before Qwik invalidation.
+8. Qwik v2 serializes the durable state and bindable context snapshot when a boundary requires it.
 
 ## Qwik City and tests
 
 Qwik's Playwright integration runs tests against the preview server instead of the dev server. That avoids cold Vite
 optimizer work during the first user gesture and keeps Qwik City tests on the same build-and-preview path users get from
 `pnpm run qwik add playwright`. Apps should be testable with normal Playwright locator actions; they should not need to
-poll private adapter state or retry the first gesture.
+poll private adapter state or retry the first gesture. The Qwik example typechecks workspace source during that preview
+build, so its TypeScript lib target must include APIs used by shared packages.
 
 ## Feasibility verdict
 
@@ -126,9 +130,8 @@ make this even smaller, but it would not remove Qwik's need for a declarative el
   directly after `splitProps(props).staticProps`.
 - Bind popper positioners with `bindPart$()` or `usePart$()` even though they do not contain handlers. Floating UI
   writes runtime CSS variables to those nodes, and the binding preserves them across Qwik rerenders.
-- Let bound menu/content props own their visibility attrs. Do not mirror `api.open` onto `hidden` for bound
-  positioners or content nodes; that can race the adapter's client-side reconnect path and leave stale visibility
-  state behind.
+- Let bound menu/content props own their visibility attrs. Do not mirror `api.open` onto `hidden` for bound positioners
+  or content nodes; that can race the adapter's client-side reconnect path and leave stale visibility state behind.
 - Bind menu content with `bindPart$()` or `usePart$()` so the adapter can refresh native event handlers and preserve
   keyboard focus after Qwik updates.
 - Do not pass imported Zag module namespaces, connected APIs, or other function-heavy objects as data arguments to QRL

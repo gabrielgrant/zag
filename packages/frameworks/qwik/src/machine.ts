@@ -15,11 +15,13 @@ import { bindProps, splitProps, type ZagProps } from "./bind-props"
 
 export class QwikMachine<T extends MachineSchema> extends VanillaMachine<T> {
   private frame = 0
+  private bindings = new Map<Element, { cleanup?: VoidFunction; getProps: () => ZagProps }>()
 
   scheduleCommit(commit: VoidFunction) {
     if (this.frame) return
     this.frame = requestAnimationFrame(() => {
       this.frame = 0
+      this.refreshBindings()
       commit()
     })
   }
@@ -29,8 +31,27 @@ export class QwikMachine<T extends MachineSchema> extends VanillaMachine<T> {
     this.frame = 0
   }
 
-  bind(node: Element, props: ZagProps) {
-    return bindProps(node, props)
+  refreshBindings() {
+    this.bindings.forEach((binding, node) => {
+      if (!node.isConnected) {
+        binding.cleanup?.()
+        this.bindings.delete(node)
+        return
+      }
+
+      binding.cleanup = bindProps(node, binding.getProps())
+    })
+  }
+
+  bind(node: Element, props: ZagProps | (() => ZagProps)) {
+    const getProps = typeof props === "function" ? props : () => props
+    const binding = { getProps, cleanup: bindProps(node, getProps()) }
+    this.bindings.set(node, binding)
+
+    return () => {
+      binding.cleanup?.()
+      if (this.bindings.get(node) === binding) this.bindings.delete(node)
+    }
   }
 }
 
@@ -130,12 +151,14 @@ export function usePartQrl<T extends MachineSchema>(
   useVisibleTask$(
     async ({ track, cleanup }) => {
       track(() => machine.revision.value)
+      track(() => Boolean(ref.value))
       const node = ref.value
       if (!node) return
       const resolvedGetProps = await getProps.resolve()
-      const nextProps = resolvedGetProps()
+      const getNextProps = () => resolvedGetProps()
+      const nextProps = getNextProps()
       staticProps.value = splitProps(props ?? nextProps).staticProps
-      cleanup(machine.controller.value.bind(node, nextProps))
+      cleanup(machine.controller.value.bind(node, () => props ?? getNextProps()))
     },
     { strategy: "document-ready" },
   )
@@ -185,12 +208,14 @@ export function bindPartQrl<T extends MachineSchema, A extends object>(
   useVisibleTask$(
     async ({ track, cleanup }) => {
       track(() => parts.machine.revision.value)
+      track(() => Boolean(ref.value))
       const node = ref.value
       if (!node) return
       const [resolvedGetApi, resolvedGetProps] = await Promise.all([parts.getApi.resolve(), getProps.resolve()])
-      const nextProps = resolvedGetProps(resolvedGetApi())
+      const getNextProps = () => resolvedGetProps(resolvedGetApi())
+      const nextProps = getNextProps()
       staticProps.value = splitProps(nextProps).staticProps
-      cleanup(parts.machine.controller.value.bind(node, nextProps))
+      cleanup(parts.machine.controller.value.bind(node, getNextProps))
     },
     { strategy: "document-ready" },
   )

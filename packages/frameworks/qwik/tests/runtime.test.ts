@@ -65,4 +65,40 @@ describe("QwikMachine", () => {
     expect(commit).toHaveBeenCalledOnce()
     vi.unstubAllGlobals()
   })
+
+  test("refreshes bound DOM props from factories before committing", () => {
+    const runtime = new QwikMachine(
+      createMachine<any>({
+        initialState: () => "idle",
+        states: { idle: {} },
+      }),
+    )
+    const content = document.createElement("div")
+    let open = false
+    let frame: FrameRequestCallback | undefined
+    vi.stubGlobal("requestAnimationFrame", (fn: FrameRequestCallback) => {
+      frame = fn
+      return 1
+    })
+    vi.stubGlobal("cancelAnimationFrame", vi.fn())
+    document.body.append(content)
+
+    const cleanup = runtime.bind(content, () => ({
+      hidden: !open,
+      "data-state": open ? "open" : "closed",
+    }))
+    expect(content.hidden).toBe(true)
+    expect(content.getAttribute("data-state")).toBe("closed")
+
+    open = true
+    runtime.scheduleCommit(() => {
+      expect(content.hidden).toBe(false)
+      expect(content.getAttribute("data-state")).toBe("open")
+    })
+    frame?.(0)
+
+    cleanup()
+    content.remove()
+    vi.unstubAllGlobals()
+  })
 })
