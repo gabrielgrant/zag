@@ -136,46 +136,6 @@ function syncStaticProps(node: Element, props: ZagProps) {
   staticPropsByNode.set(node, nextKeys)
 }
 
-function syncCompositeFocus(node: Element, props: ZagProps): VoidFunction {
-  if (props.role !== "menu") return () => {}
-
-  let frame = 0
-  let timer = 0
-  let attempts = 0
-  const isOpen = () => node.getAttribute("data-state") === "open" || props["data-state"] === "open"
-  const focus = () => {
-    if (!node.isConnected) return
-    if (!isOpen()) return
-    if (node.hasAttribute("hidden")) return
-    if (node.contains(node.ownerDocument.activeElement)) return
-    const element = node as HTMLElement
-    if (element.tabIndex < 0) element.tabIndex = 0
-    element.focus({ preventScroll: true })
-    attempts += 1
-    if (node.ownerDocument.activeElement === node) return
-    if (attempts >= 3) return
-    timer = window.setTimeout(() => {
-      frame = requestAnimationFrame(focus)
-    })
-  }
-  const scheduleFocus = () => {
-    cancelAnimationFrame(frame)
-    clearTimeout(timer)
-    attempts = 0
-    frame = requestAnimationFrame(focus)
-  }
-
-  const observer = new MutationObserver(scheduleFocus)
-  observer.observe(node, { attributeFilter: ["data-state", "hidden"] })
-  scheduleFocus()
-
-  return () => {
-    observer.disconnect()
-    cancelAnimationFrame(frame)
-    clearTimeout(timer)
-  }
-}
-
 function preserveStyleVariables(node: Element): VoidFunction {
   const style = (node as HTMLElement).style
   if (!style) return () => {}
@@ -226,7 +186,6 @@ export function bindProps(node: Element, props: ZagProps): VoidFunction {
   syncStaticProps(node, props)
   const { eventProps } = splitProps(props)
   const stopPreservingStyleVariables = preserveStyleVariables(node)
-  const stopSyncingCompositeFocus = syncCompositeFocus(node, props)
 
   Object.entries(eventProps).forEach(([event, listener]) => {
     node.addEventListener(event, listener)
@@ -235,7 +194,6 @@ export function bindProps(node: Element, props: ZagProps): VoidFunction {
   const binding: Binding = {
     cleanup() {
       stopPreservingStyleVariables()
-      stopSyncingCompositeFocus()
       Object.entries(eventProps).forEach(([event, listener]) => {
         node.removeEventListener(event, listener)
       })

@@ -18,10 +18,10 @@ export class QwikMachine<T extends MachineSchema> extends VanillaMachine<T> {
   private bindings = new Map<Element, { cleanup?: VoidFunction; getProps: () => ZagProps }>()
 
   scheduleCommit(commit: VoidFunction) {
+    this.refreshBindings()
     if (this.frame) return
     this.frame = requestAnimationFrame(() => {
       this.frame = 0
-      this.refreshBindings()
       commit()
     })
   }

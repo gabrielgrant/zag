@@ -66,7 +66,7 @@ describe("QwikMachine", () => {
     vi.unstubAllGlobals()
   })
 
-  test("refreshes bound DOM props from factories before committing", () => {
+  test("refreshes bound DOM props from factories before animation frame work runs", () => {
     const runtime = new QwikMachine(
       createMachine<any>({
         initialState: () => "idle",
@@ -91,11 +91,15 @@ describe("QwikMachine", () => {
     expect(content.getAttribute("data-state")).toBe("closed")
 
     open = true
-    runtime.scheduleCommit(() => {
-      expect(content.hidden).toBe(false)
-      expect(content.getAttribute("data-state")).toBe("open")
-    })
+    const commit = vi.fn()
+    runtime.scheduleCommit(commit)
+
+    expect(content.hidden).toBe(false)
+    expect(content.getAttribute("data-state")).toBe("open")
+    expect(commit).not.toHaveBeenCalled()
+
     frame?.(0)
+    expect(commit).toHaveBeenCalledOnce()
 
     cleanup()
     content.remove()

@@ -79,10 +79,6 @@ The render-time connected API is also marked as non-serializable internally. Thi
 contain functions and live runtime references, so Qwik should not serialize them into HTML. The durable state is the
 machine snapshot; the browser can recreate the connected API from the QRL and live controller after resume.
 
-When Qwik rebinds an open composite menu, the adapter also restores focus to the content node if focus is not already
-inside it. This keeps menu keyboard and typeahead flows aligned with Zag's runtime focus effects without requiring app
-code to schedule a Qwik-visible focus task.
-
 `useMachine$()` takes a serializer QRL. Imported Zag machine functions are recreated after resume instead of being
 serialized into HTML. Pass a stable `id` in machine props when the machine uses DOM ids.
 
@@ -99,9 +95,8 @@ The adapter handles that split internally:
 3. `bindPart$()` spreads static attributes through JSX and binds generated function props as native listeners.
 4. One live controller handles the complete pointer and click gesture chain.
 5. The binding pass refreshes the same static attributes on the DOM node immediately after each machine publish.
-6. Open menu content is refocused after binding when Qwik's DOM timing races Zag's focus effects.
-7. Machine publishes are coalesced with `requestAnimationFrame()` before Qwik invalidation.
-8. Qwik v2 serializes the durable state and bindable context snapshot when a boundary requires it.
+6. Qwik invalidation is coalesced with `requestAnimationFrame()` after bound DOM state has been refreshed.
+7. Qwik v2 serializes the durable state and bindable context snapshot when a boundary requires it.
 
 ## Qwik City and tests
 
@@ -132,8 +127,8 @@ make this even smaller, but it would not remove Qwik's need for a declarative el
   writes runtime CSS variables to those nodes, and the binding preserves them across Qwik rerenders.
 - Let bound menu/content props own their visibility attrs. Do not mirror `api.open` onto `hidden` for bound positioners
   or content nodes; that can race the adapter's client-side reconnect path and leave stale visibility state behind.
-- Bind menu content with `bindPart$()` or `usePart$()` so the adapter can refresh native event handlers and preserve
-  keyboard focus after Qwik updates.
+- Bind menu content with `bindPart$()` or `usePart$()` so the adapter can refresh native event handlers and static DOM
+  state before machine-scheduled focus or measurement work runs.
 - Do not pass imported Zag module namespaces, connected APIs, or other function-heavy objects as data arguments to QRL
   helpers. Reference imports inside the QRL closure instead.
 - Use `@qwik.dev/core` v2. The serializer primitive is not available from the Qwik v1 package.
