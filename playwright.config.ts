@@ -54,7 +54,7 @@ export function getWebServer(): WebServer {
 
 const webServer = getWebServer()
 
-const qwikTestMatch = ["menu.e2e.ts", "context-menu.e2e.ts", "menu-multiple-trigger.e2e.ts"]
+const qwikTestMatch = ["menu.e2e.ts", "context-menu.e2e.ts", "menu-multiple-trigger.e2e.ts", "menu-option.e2e.ts"]
 
 export default defineConfig({
   testDir: "./e2e",
