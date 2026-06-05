@@ -13,6 +13,20 @@ interface StateVisualizerProps {
   label?: string
 }
 
+function createVisualizerReplacer() {
+  const seen = new WeakSet<object>()
+
+  return (_key: string, value: unknown) => {
+    if (value instanceof Event) return `[${value.type} event]`
+    if (value instanceof Node) return `[${value.nodeName.toLowerCase()}]`
+    if (typeof value === "function") return "[function]"
+    if (value === null || typeof value !== "object") return value
+    if (seen.has(value)) return "[circular]"
+    seen.add(value)
+    return value
+  }
+}
+
 export const StateVisualizer = component$((props: StateVisualizerProps) => {
   const state = useSignal("{}")
 
@@ -26,7 +40,7 @@ export const StateVisualizer = component$((props: StateVisualizerProps) => {
           event: service.event.current(),
           previousEvent: service.event.previous(),
         },
-        null,
+        createVisualizerReplacer(),
         2,
       )
     },
@@ -35,12 +49,12 @@ export const StateVisualizer = component$((props: StateVisualizerProps) => {
 
   return (
     <div class="viz">
-      <pre dir="ltr">
-        <details open>
-          <summary> {props.label || "Visualizer"} </summary>
+      <details open>
+        <summary> {props.label || "Visualizer"} </summary>
+        <pre dir="ltr">
           <code>{state.value}</code>
-        </details>
-      </pre>
+        </pre>
+      </details>
     </div>
   )
 })
