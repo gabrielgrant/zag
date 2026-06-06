@@ -20,6 +20,8 @@
     "@zag-js/navigation-menu": "workspace:*",
     "@zag-js/qwik": "workspace:*",
     "@zag-js/shared": "workspace:*"
+    ,
+    "@zag-js/switch": "workspace:*"
   },
   "devDependencies": {
     "@qwik.dev/core": "2.0.0-beta.36",

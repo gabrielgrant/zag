@@ -22,6 +22,9 @@ export default component$(() => {
         <Link data-active={pathnameComponent === "navigation-menu" ? "" : undefined} href="/navigation-menu">
           Navigation Menu
         </Link>
+        <Link data-active={pathnameComponent === "switch" ? "" : undefined} href="/switch">
+          Switch
+        </Link>
         <Link data-active={pathnameComponent === "context-menu" ? "" : undefined} href="/context-menu">
           Context Menu
         </Link>

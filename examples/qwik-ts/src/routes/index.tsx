@@ -19,6 +19,9 @@ export default component$(() => {
           <Link href="/navigation-menu">Navigation Menu</Link>
         </li>
         <li>
+          <Link href="/switch">Switch</Link>
+        </li>
+        <li>
           <Link href="/context-menu">Context Menu</Link>
         </li>
       </ul>
