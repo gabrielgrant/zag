@@ -10,6 +10,9 @@ export default component$(() => {
           <Link href="/avatar">Avatar</Link>
         </li>
         <li>
+          <Link href="/clipboard">Clipboard</Link>
+        </li>
+        <li>
           <Link href="/menu">Menu</Link>
         </li>
         <li>

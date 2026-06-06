@@ -980,6 +980,9 @@ importers:
       '@zag-js/avatar':
         specifier: workspace:*
         version: link:../../packages/machines/avatar
+      '@zag-js/clipboard':
+        specifier: workspace:*
+        version: link:../../packages/machines/clipboard
       '@zag-js/menu':
         specifier: workspace:*
         version: link:../../packages/machines/menu
