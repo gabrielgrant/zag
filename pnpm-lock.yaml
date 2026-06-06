@@ -980,6 +980,9 @@ importers:
       '@zag-js/menu':
         specifier: workspace:*
         version: link:../../packages/machines/menu
+      '@zag-js/navigation-menu':
+        specifier: workspace:*
+        version: link:../../packages/machines/navigation-menu
       '@zag-js/qwik':
         specifier: workspace:*
         version: link:../../packages/frameworks/qwik

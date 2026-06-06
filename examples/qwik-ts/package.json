@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@zag-js/menu": "workspace:*",
+    "@zag-js/navigation-menu": "workspace:*",
     "@zag-js/qwik": "workspace:*",
     "@zag-js/shared": "workspace:*"
   },

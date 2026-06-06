@@ -10,6 +10,9 @@ export default component$(() => {
           <Link href="/menu">Menu</Link>
         </li>
         <li>
+          <Link href="/navigation-menu">Navigation Menu</Link>
+        </li>
+        <li>
           <Link href="/context-menu">Context Menu</Link>
         </li>
       </ul>
