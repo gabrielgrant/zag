@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@zag-js/avatar": "workspace:*",
+    "@zag-js/checkbox": "workspace:*",
     "@zag-js/clipboard": "workspace:*",
     "@zag-js/menu": "workspace:*",
     "@zag-js/navigation-menu": "workspace:*",

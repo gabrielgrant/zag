@@ -13,6 +13,9 @@ export default component$(() => {
         <Link data-active={pathnameComponent === "avatar" ? "" : undefined} href="/avatar">
           Avatar
         </Link>
+        <Link data-active={pathnameComponent === "checkbox" ? "" : undefined} href="/checkbox">
+          Checkbox
+        </Link>
         <Link data-active={pathnameComponent === "clipboard" ? "" : undefined} href="/clipboard">
           Clipboard
         </Link>

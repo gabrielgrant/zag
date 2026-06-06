@@ -13,6 +13,9 @@ export default component$(() => {
           <Link href="/clipboard">Clipboard</Link>
         </li>
         <li>
+          <Link href="/checkbox">Checkbox</Link>
+        </li>
+        <li>
           <Link href="/menu">Menu</Link>
         </li>
         <li>
