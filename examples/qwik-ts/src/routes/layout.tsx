@@ -10,6 +10,9 @@ export default component$(() => {
     <div class="page">
       <aside class="nav">
         <header>Zagjs</header>
+        <Link data-active={pathnameComponent === "avatar" ? "" : undefined} href="/avatar">
+          Avatar
+        </Link>
         <Link data-active={pathnameComponent === "menu" ? "" : undefined} href="/menu">
           Menu
         </Link>
