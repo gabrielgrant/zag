@@ -21,11 +21,15 @@ test.describe("menu / multiple triggers", () => {
     await page.click(trigger(5))
     await expect(page.locator(menu)).toBeVisible()
     await expect(page.locator(menu)).toContainText("value: 5")
+    await expect(page.getByText("Active Trigger: 5")).toBeVisible()
+    await expect(page.getByText("Active Document: Code Review.md (Markdown)")).toBeVisible()
 
     // Click first trigger - above the menu, so not covered
     await page.click(trigger(1))
     await expect(page.locator(menu)).toBeVisible()
     await expect(page.locator(menu)).toContainText("value: 1")
+    await expect(page.getByText("Active Trigger: 1")).toBeVisible()
+    await expect(page.getByText("Active Document: Project Proposal.pdf (PDF)")).toBeVisible()
   })
 
   test("should reposition menu when switching triggers", async ({ page }) => {
@@ -64,6 +68,8 @@ test.describe("menu / multiple triggers", () => {
     await page.keyboard.press("Enter")
     await expect(page.locator(menu)).toBeVisible()
     await expect(page.locator(menu)).toContainText("value: 2")
+    await expect(page.getByText("Active Trigger: 2")).toBeVisible()
+    await expect(page.getByText("Active Document: Budget 2024.xlsx (Excel)")).toBeVisible()
   })
 
   test("should open menu with Space key", async ({ page }) => {
