@@ -3,18 +3,24 @@ import { useLocation } from "@qwik.dev/router"
 
 export default component$(() => {
   const { url } = useLocation()
-  const isMenuRoute = url.pathname.startsWith("/menu")
-  const isContextMenuRoute = url.pathname.startsWith("/context-menu")
+  const pathname = url.pathname
+  const isActive = (href: string) => pathname === href
 
   return (
     <div class="page">
       <aside class="nav">
         <header>Zagjs</header>
-        <a data-active={isMenuRoute ? "" : undefined} href="/menu/basic">
-          Menu
+        <a data-active={isActive("/menu/basic") ? "" : undefined} href="/menu/basic">
+          Menu basic
         </a>
-        <a data-active={isContextMenuRoute ? "" : undefined} href="/context-menu/basic">
-          Context Menu
+        <a data-active={isActive("/menu/multiple-trigger") ? "" : undefined} href="/menu/multiple-trigger">
+          Menu multiple trigger
+        </a>
+        <a data-active={isActive("/menu/options") ? "" : undefined} href="/menu/options">
+          Menu options
+        </a>
+        <a data-active={isActive("/context-menu/basic") ? "" : undefined} href="/context-menu/basic">
+          Context menu basic
         </a>
       </aside>
       <Slot />
