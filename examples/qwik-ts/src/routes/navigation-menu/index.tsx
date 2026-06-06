@@ -1,7 +1,10 @@
 import { component$ } from "@qwik.dev/core"
 import { Link, type DocumentHead } from "@qwik.dev/router"
 
-const examples = [{ href: "/navigation-menu/basic", title: "Basic" }]
+const examples = [
+  { href: "/navigation-menu/basic", title: "Basic" },
+  { href: "/navigation-menu/viewport", title: "Viewport" },
+]
 
 export default component$(() => {
   return (
