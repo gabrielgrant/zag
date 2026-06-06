@@ -3,12 +3,17 @@ import type { DocumentHead } from "@qwik.dev/router"
 
 export default component$(() => {
   return (
-    <main>
-      <a href="/menu/basic">Menu basic</a>
-      <a href="/menu/multiple-trigger">Menu multiple trigger</a>
-      <a href="/menu/options">Menu options</a>
-      <a href="/context-menu/basic">Context menu basic</a>
-    </main>
+    <div class="index-nav">
+      <h2>Components</h2>
+      <ul>
+        <li>
+          <a href="/menu">Menu</a>
+        </li>
+        <li>
+          <a href="/context-menu">Context Menu</a>
+        </li>
+      </ul>
+    </div>
   )
 })
 
