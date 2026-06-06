@@ -3,6 +3,7 @@ import { Link, type DocumentHead } from "@qwik.dev/router"
 
 const examples = [
   { href: "/menu/basic", title: "Basic" },
+  { href: "/menu/nested", title: "Nested" },
   { href: "/menu/multiple-trigger", title: "Multiple Trigger" },
   { href: "/menu/options", title: "Options" },
 ]
