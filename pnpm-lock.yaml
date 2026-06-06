@@ -992,6 +992,9 @@ importers:
       '@zag-js/navigation-menu':
         specifier: workspace:*
         version: link:../../packages/machines/navigation-menu
+      '@zag-js/password-input':
+        specifier: workspace:*
+        version: link:../../packages/machines/password-input
       '@zag-js/qwik':
         specifier: workspace:*
         version: link:../../packages/frameworks/qwik
