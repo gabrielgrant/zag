@@ -1,5 +1,5 @@
 import { component$, Slot } from "@qwik.dev/core"
-import { useLocation } from "@qwik.dev/router"
+import { Link, useLocation } from "@qwik.dev/router"
 
 export default component$(() => {
   const { url } = useLocation()
@@ -10,12 +10,12 @@ export default component$(() => {
     <div class="page">
       <aside class="nav">
         <header>Zagjs</header>
-        <a data-active={pathnameComponent === "menu" ? "" : undefined} href="/menu">
+        <Link data-active={pathnameComponent === "menu" ? "" : undefined} href="/menu">
           Menu
-        </a>
-        <a data-active={pathnameComponent === "context-menu" ? "" : undefined} href="/context-menu">
+        </Link>
+        <Link data-active={pathnameComponent === "context-menu" ? "" : undefined} href="/context-menu">
           Context Menu
-        </a>
+        </Link>
       </aside>
       <Slot />
     </div>

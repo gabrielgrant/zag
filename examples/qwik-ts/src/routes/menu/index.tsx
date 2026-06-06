@@ -1,5 +1,5 @@
 import { component$ } from "@qwik.dev/core"
-import type { DocumentHead } from "@qwik.dev/router"
+import { Link, type DocumentHead } from "@qwik.dev/router"
 
 const examples = [
   { href: "/menu/basic", title: "Basic" },
@@ -16,7 +16,7 @@ export default component$(() => {
       <ul>
         {examples.map((example) => (
           <li key={example.href}>
-            <a href={example.href}>{example.title}</a>
+            <Link href={example.href}>{example.title}</Link>
           </li>
         ))}
       </ul>

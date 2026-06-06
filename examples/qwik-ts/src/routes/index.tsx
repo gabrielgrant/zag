@@ -1,5 +1,5 @@
 import { component$ } from "@qwik.dev/core"
-import type { DocumentHead } from "@qwik.dev/router"
+import { Link, type DocumentHead } from "@qwik.dev/router"
 
 export default component$(() => {
   return (
@@ -7,10 +7,10 @@ export default component$(() => {
       <h2>Components</h2>
       <ul>
         <li>
-          <a href="/menu">Menu</a>
+          <Link href="/menu">Menu</Link>
         </li>
         <li>
-          <a href="/context-menu">Context Menu</a>
+          <Link href="/context-menu">Context Menu</Link>
         </li>
       </ul>
     </div>
