@@ -1,7 +1,10 @@
 import { component$ } from "@qwik.dev/core"
 import { Link, type DocumentHead } from "@qwik.dev/router"
 
-const examples = [{ href: "/context-menu/basic", title: "Basic" }]
+const examples = [
+  { href: "/context-menu/basic", title: "Basic" },
+  { href: "/context-menu/multiple-trigger", title: "Multiple Trigger" },
+]
 
 export default component$(() => {
   return (

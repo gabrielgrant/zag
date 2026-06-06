@@ -58,6 +58,7 @@ const qwikTestMatch = [
   "menu.e2e.ts",
   "menu-nested.e2e.ts",
   "context-menu.e2e.ts",
+  "context-menu-multiple-trigger.e2e.ts",
   "menu-multiple-trigger.e2e.ts",
   "menu-option.e2e.ts",
   "visualizer.e2e.ts",
