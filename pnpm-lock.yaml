@@ -977,6 +977,9 @@ importers:
 
   examples/qwik-ts:
     dependencies:
+      '@zag-js/accordion':
+        specifier: workspace:*
+        version: link:../../packages/machines/accordion
       '@zag-js/avatar':
         specifier: workspace:*
         version: link:../../packages/machines/avatar

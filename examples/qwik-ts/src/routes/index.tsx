@@ -7,6 +7,9 @@ export default component$(() => {
       <h2>Components</h2>
       <ul>
         <li>
+          <Link href="/accordion">Accordion</Link>
+        </li>
+        <li>
           <Link href="/avatar">Avatar</Link>
         </li>
         <li>
