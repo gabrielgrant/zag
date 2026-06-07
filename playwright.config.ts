@@ -72,6 +72,7 @@ const qwikTestMatch = [
   "rating-group.e2e.ts",
   "switch.e2e.ts",
   "tabs.e2e.ts",
+  "toggle-group.e2e.ts",
   "visualizer.e2e.ts",
 ]
 

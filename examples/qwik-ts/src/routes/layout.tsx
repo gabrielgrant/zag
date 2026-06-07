@@ -46,6 +46,9 @@ export default component$(() => {
         <Link data-active={pathnameComponent === "tabs" ? "" : undefined} href="/tabs">
           Tabs
         </Link>
+        <Link data-active={pathnameComponent === "toggle-group" ? "" : undefined} href="/toggle-group">
+          Toggle Group
+        </Link>
         <Link data-active={pathnameComponent === "context-menu" ? "" : undefined} href="/context-menu">
           Context Menu
         </Link>

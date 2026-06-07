@@ -1019,6 +1019,9 @@ importers:
       '@zag-js/tabs':
         specifier: workspace:*
         version: link:../../packages/machines/tabs
+      '@zag-js/toggle-group':
+        specifier: workspace:*
+        version: link:../../packages/machines/toggle-group
     devDependencies:
       '@qwik.dev/core':
         specifier: 2.0.0-beta.36

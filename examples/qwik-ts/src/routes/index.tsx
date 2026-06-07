@@ -43,6 +43,9 @@ export default component$(() => {
           <Link href="/tabs">Tabs</Link>
         </li>
         <li>
+          <Link href="/toggle-group">Toggle Group</Link>
+        </li>
+        <li>
           <Link href="/context-menu">Context Menu</Link>
         </li>
       </ul>
