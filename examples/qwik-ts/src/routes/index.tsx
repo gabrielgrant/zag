@@ -28,6 +28,9 @@ export default component$(() => {
           <Link href="/radio-group">Radio Group</Link>
         </li>
         <li>
+          <Link href="/rating-group">Rating Group</Link>
+        </li>
+        <li>
           <Link href="/password-input">Password Input</Link>
         </li>
         <li>

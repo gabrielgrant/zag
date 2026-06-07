@@ -31,6 +31,9 @@ export default component$(() => {
         <Link data-active={pathnameComponent === "radio-group" ? "" : undefined} href="/radio-group">
           Radio Group
         </Link>
+        <Link data-active={pathnameComponent === "rating-group" ? "" : undefined} href="/rating-group">
+          Rating Group
+        </Link>
         <Link data-active={pathnameComponent === "password-input" ? "" : undefined} href="/password-input">
           Password Input
         </Link>
