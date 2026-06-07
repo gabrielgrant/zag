@@ -7,6 +7,9 @@ export interface SplitProps {
 
 interface Binding {
   cleanup: VoidFunction
+  eventBindings: Map<string, { listener: EventListener; wrapped: EventListener }>
+  stopPreservingStyleVariables: VoidFunction
+  version: number
 }
 
 const bindings = new WeakMap<Element, Binding>()
@@ -14,6 +17,62 @@ const styleVariables = new WeakMap<Element, Map<string, string>>()
 const staticPropsByNode = new WeakMap<Element, Set<string>>()
 const stylePropsByNode = new WeakMap<Element, Set<string>>()
 const stringStyleNodes = new WeakSet<Element>()
+const activelyEditedInputs = new WeakSet<Element>()
+const inputEditVersions = new WeakMap<Element, number>()
+const replayedInitialInputs = new WeakSet<Element>()
+let activeInputNode: HTMLInputElement | HTMLTextAreaElement | undefined
+let currentEventType: string | undefined
+
+function preserveActiveInputValue(eventObject: Event) {
+  const node = eventObject.currentTarget
+  if (!(node instanceof HTMLInputElement || node instanceof HTMLTextAreaElement)) return
+
+  activelyEditedInputs.add(node)
+  activeInputNode = node
+  const version = (inputEditVersions.get(node) ?? 0) + 1
+  inputEditVersions.set(node, version)
+
+  const value = node.value
+  const selectionStart = node.selectionStart
+  const selectionEnd = node.selectionEnd
+
+  queueMicrotask(() => {
+    requestAnimationFrame(() => {
+      if (!activelyEditedInputs.has(node)) return
+      if (inputEditVersions.get(node) !== version) return
+      if (node.value !== value) node.value = value
+      if (selectionStart != null && selectionEnd != null && document.activeElement === node) {
+        node.setSelectionRange(selectionStart, selectionEnd)
+      }
+    })
+  })
+}
+
+function clearActiveInputValue(eventObject: Event) {
+  const node = eventObject.currentTarget
+  if (!(node instanceof HTMLInputElement || node instanceof HTMLTextAreaElement)) return
+  activelyEditedInputs.delete(node)
+  inputEditVersions.delete(node)
+  if (activeInputNode === node) activeInputNode = undefined
+}
+
+function clearActiveInputNode() {
+  if (!activeInputNode) return
+  activelyEditedInputs.delete(activeInputNode)
+  inputEditVersions.delete(activeInputNode)
+  activeInputNode = undefined
+}
+
+function replayMissedInitialInput(node: Element, eventProps: Record<string, EventListener>) {
+  if (!(node instanceof HTMLInputElement || node instanceof HTMLTextAreaElement)) return
+  if (replayedInitialInputs.has(node)) return
+  if (!eventProps.input) return
+  replayedInitialInputs.add(node)
+  if (node.value === node.defaultValue) return
+  if (document.activeElement !== node) return
+
+  node.dispatchEvent(new Event("input", { bubbles: true }))
+}
 
 function getAttributeName(key: string) {
   if (key === "className") return "class"
@@ -101,6 +160,23 @@ function setStaticProp(node: Element, key: string, value: unknown) {
     return
   }
 
+  if (key === "defaultValue" && (node instanceof HTMLInputElement || node instanceof HTMLTextAreaElement)) {
+    node.defaultValue = value == null ? "" : String(value)
+    node.setAttribute(attribute, node.defaultValue)
+
+    if (currentEventType === "input") {
+      activelyEditedInputs.add(node)
+      return
+    }
+
+    if (currentEventType !== undefined || !activelyEditedInputs.has(node)) {
+      node.value = node.defaultValue
+      activelyEditedInputs.delete(node)
+      inputEditVersions.delete(node)
+    }
+    return
+  }
+
   if (remove) {
     removeStaticProp(node, key)
     return
@@ -182,27 +258,69 @@ export function splitProps(props: ZagProps): SplitProps {
 }
 
 export function bindProps(node: Element, props: ZagProps): VoidFunction {
-  bindings.get(node)?.cleanup()
+  let binding = bindings.get(node)
+  if (!binding) {
+    const eventBindings: Binding["eventBindings"] = new Map()
+    const stopPreservingStyleVariables = preserveStyleVariables(node)
+    binding = {
+      eventBindings,
+      stopPreservingStyleVariables,
+      version: 0,
+      cleanup() {
+        stopPreservingStyleVariables()
+        eventBindings.forEach(({ wrapped }, event) => {
+          node.removeEventListener(event, wrapped)
+        })
+        eventBindings.clear()
+        if (bindings.get(node) === activeBinding) bindings.delete(node)
+      },
+    }
+    bindings.set(node, binding)
+  }
+  const activeBinding = binding
+
+  activeBinding.version += 1
+  const version = activeBinding.version
+
   syncStaticProps(node, props)
   const { eventProps } = splitProps(props)
-  const stopPreservingStyleVariables = preserveStyleVariables(node)
+  const nextEvents = new Set(Object.keys(eventProps))
 
   Object.entries(eventProps).forEach(([event, listener]) => {
-    node.addEventListener(event, listener)
+    const current = activeBinding.eventBindings.get(event)
+    if (current) {
+      current.listener = listener
+      return
+    }
+
+    const entry = {
+      listener,
+      wrapped(eventObject: Event) {
+        const previousEventType = currentEventType
+        currentEventType = eventObject.type
+        try {
+          entry.listener(eventObject)
+        } finally {
+          if (eventObject.type === "input") preserveActiveInputValue(eventObject)
+          if (eventObject.type === "focusout" || eventObject.type === "blur") clearActiveInputValue(eventObject)
+          if (!["beforeinput", "input", "keydown"].includes(eventObject.type)) clearActiveInputNode()
+          currentEventType = previousEventType
+        }
+      },
+    }
+    activeBinding.eventBindings.set(event, entry)
+    node.addEventListener(event, entry.wrapped)
   })
 
-  const binding: Binding = {
-    cleanup() {
-      stopPreservingStyleVariables()
-      Object.entries(eventProps).forEach(([event, listener]) => {
-        node.removeEventListener(event, listener)
-      })
-      if (bindings.get(node) === binding) bindings.delete(node)
-    },
-  }
-  bindings.set(node, binding)
+  activeBinding.eventBindings.forEach(({ wrapped }, event) => {
+    if (nextEvents.has(event)) return
+    node.removeEventListener(event, wrapped)
+    activeBinding.eventBindings.delete(event)
+  })
+
+  replayMissedInitialInput(node, eventProps)
 
   return () => {
-    binding.cleanup()
+    if (bindings.get(node) === activeBinding && activeBinding.version === version) activeBinding.cleanup()
   }
 }

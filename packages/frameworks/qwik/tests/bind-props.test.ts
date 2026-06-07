@@ -113,6 +113,41 @@ describe("bindProps", () => {
     expect(second).toHaveBeenCalledOnce()
   })
 
+  test("does not overwrite an active input value from defaultValue after input events", () => {
+    const input = document.createElement("input")
+    const cleanup = bindProps(input, {
+      defaultValue: "",
+      onInput() {
+        bindProps(input, { defaultValue: "$5,555.00" })
+      },
+    })
+
+    input.value = "$5555.00"
+    input.dispatchEvent(new Event("input", { bubbles: true }))
+    bindProps(input, { defaultValue: "$5,555.00" })
+
+    expect(input.value).toBe("$5555.00")
+    expect(input.defaultValue).toBe("$5,555.00")
+    cleanup()
+  })
+
+  test("does write defaultValue to the current input value after non-input events", () => {
+    const input = document.createElement("input")
+    const cleanup = bindProps(input, {
+      defaultValue: "5",
+      onKeyDown() {
+        bindProps(input, { defaultValue: "6" })
+      },
+    })
+
+    input.value = "5"
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true }))
+
+    expect(input.value).toBe("6")
+    expect(input.defaultValue).toBe("6")
+    cleanup()
+  })
+
   test("preserves runtime CSS variables across declarative style replacements", async () => {
     const positioner = document.createElement("div")
     const cleanup = bindProps(positioner, { style: { transform: "translate3d(var(--x), var(--y), 0)" } })

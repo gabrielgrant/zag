@@ -21,8 +21,11 @@ export class QwikMachine<T extends MachineSchema> extends VanillaMachine<T> {
     this.refreshBindings()
     if (this.frame) return
     this.frame = requestAnimationFrame(() => {
-      this.frame = 0
       commit()
+      this.frame = requestAnimationFrame(() => {
+        this.frame = 0
+        this.refreshBindings()
+      })
     })
   }
 
@@ -118,6 +121,20 @@ export interface ZagPart {
   ref: Signal<Element | undefined>
 }
 
+function getInitialStaticProps(props: ZagProps): ZagProps {
+  const { eventProps, staticProps } = splitProps(props)
+  if (eventProps.input && staticProps.readOnly === false) {
+    return { ...staticProps, readOnly: true }
+  }
+  return staticProps
+}
+
+function getBoundStaticProps(props: ZagProps): ZagProps {
+  const { staticProps } = splitProps(props)
+  const { defaultValue: _defaultValue, ...safeProps } = staticProps
+  return safeProps
+}
+
 export interface ConnectedParts<T extends MachineSchema, A extends object> {
   api: A
   getApi: QRL<() => A>
@@ -146,7 +163,7 @@ export function usePartQrl<T extends MachineSchema>(
 ): ZagPart {
   machine.revision.value
   const ref = useSignal<Element>()
-  const staticProps = useSignal<ZagProps>(splitProps(props ?? callQrlRender(getProps) ?? {}).staticProps)
+  const staticProps = useSignal<ZagProps>(getInitialStaticProps(props ?? callQrlRender(getProps) ?? {}))
 
   useVisibleTask$(
     async ({ track, cleanup }) => {
@@ -156,8 +173,7 @@ export function usePartQrl<T extends MachineSchema>(
       if (!node) return
       const resolvedGetProps = await getProps.resolve()
       const getNextProps = () => resolvedGetProps()
-      const nextProps = getNextProps()
-      staticProps.value = splitProps(props ?? nextProps).staticProps
+      staticProps.value = getBoundStaticProps(props ?? getNextProps())
       cleanup(machine.controller.value.bind(node, () => props ?? getNextProps()))
     },
     { strategy: "document-ready" },
@@ -165,7 +181,7 @@ export function usePartQrl<T extends MachineSchema>(
 
   return {
     ref,
-    props: getProps.resolved ? splitProps(props ?? getProps.resolved()).staticProps : staticProps.value,
+    props: staticProps.value,
   }
 }
 
@@ -203,7 +219,7 @@ export function bindPartQrl<T extends MachineSchema, A extends object>(
   parts.machine.revision.value
   const ref = useSignal<Element>()
   const initialProps = parts.api ? callQrlRender(getProps, parts.api) : undefined
-  const staticProps = useSignal<ZagProps>(splitProps(initialProps ?? {}).staticProps)
+  const staticProps = useSignal<ZagProps>(getInitialStaticProps(initialProps ?? {}))
 
   useVisibleTask$(
     async ({ track, cleanup }) => {
@@ -213,8 +229,7 @@ export function bindPartQrl<T extends MachineSchema, A extends object>(
       if (!node) return
       const [resolvedGetApi, resolvedGetProps] = await Promise.all([parts.getApi.resolve(), getProps.resolve()])
       const getNextProps = () => resolvedGetProps(resolvedGetApi())
-      const nextProps = getNextProps()
-      staticProps.value = splitProps(nextProps).staticProps
+      staticProps.value = getBoundStaticProps(getNextProps())
       cleanup(parts.machine.controller.value.bind(node, getNextProps))
     },
     { strategy: "document-ready" },
@@ -222,7 +237,7 @@ export function bindPartQrl<T extends MachineSchema, A extends object>(
 
   return {
     ref,
-    props: getProps.resolved ? splitProps(getProps.resolved(parts.api)).staticProps : staticProps.value,
+    props: staticProps.value,
   }
 }
 

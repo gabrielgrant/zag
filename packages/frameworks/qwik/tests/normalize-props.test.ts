@@ -18,4 +18,10 @@ describe("normalizeProps", () => {
       onFocusin: onFocus,
     })
   })
+
+  test("preserves defaultValue so bound inputs remain uncontrolled after mount", () => {
+    expect(normalizeProps.input({ defaultValue: "hello" })).toEqual({
+      defaultValue: "hello",
+    })
+  })
 })

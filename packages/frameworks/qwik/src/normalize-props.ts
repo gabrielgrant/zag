@@ -7,7 +7,6 @@ const propMap: Record<string, string> = {
   onDoubleClick: "onDblclick",
   htmlFor: "for",
   className: "class",
-  defaultValue: "value",
   defaultChecked: "checked",
 }
 
