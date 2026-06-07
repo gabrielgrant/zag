@@ -19,6 +19,9 @@ export default component$(() => {
           <Link href="/collapsible">Collapsible</Link>
         </li>
         <li>
+          <Link href="/editable">Editable</Link>
+        </li>
+        <li>
           <Link href="/checkbox">Checkbox</Link>
         </li>
         <li>

@@ -21,6 +21,7 @@
     "@zag-js/collapsible": "workspace:*",
     "@zag-js/menu": "workspace:*",
     "@zag-js/navigation-menu": "workspace:*",
+    "@zag-js/editable": "workspace:*",
     "@zag-js/password-input": "workspace:*",
     "@zag-js/pagination": "workspace:*",
     "@zag-js/radio-group": "workspace:*",
