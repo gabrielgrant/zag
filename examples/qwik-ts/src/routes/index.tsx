@@ -22,6 +22,9 @@ export default component$(() => {
           <Link href="/navigation-menu">Navigation Menu</Link>
         </li>
         <li>
+          <Link href="/pagination">Pagination</Link>
+        </li>
+        <li>
           <Link href="/password-input">Password Input</Link>
         </li>
         <li>
