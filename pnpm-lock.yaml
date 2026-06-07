@@ -1001,6 +1001,9 @@ importers:
       '@zag-js/navigation-menu':
         specifier: workspace:*
         version: link:../../packages/machines/navigation-menu
+      '@zag-js/number-input':
+        specifier: workspace:*
+        version: link:../../packages/machines/number-input
       '@zag-js/pagination':
         specifier: workspace:*
         version: link:../../packages/machines/pagination

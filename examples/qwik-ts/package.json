@@ -23,14 +23,14 @@
     "@zag-js/navigation-menu": "workspace:*",
     "@zag-js/editable": "workspace:*",
     "@zag-js/password-input": "workspace:*",
+    "@zag-js/number-input": "workspace:*",
     "@zag-js/pagination": "workspace:*",
     "@zag-js/radio-group": "workspace:*",
     "@zag-js/rating-group": "workspace:*",
     "@zag-js/qwik": "workspace:*",
     "@zag-js/shared": "workspace:*",
     "@zag-js/switch": "workspace:*",
-    "@zag-js/tabs": "workspace:*"
-    ,
+    "@zag-js/tabs": "workspace:*",
     "@zag-js/toggle-group": "workspace:*"
   },
   "devDependencies": {

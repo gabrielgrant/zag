@@ -34,6 +34,9 @@ export default component$(() => {
         <Link data-active={pathnameComponent === "navigation-menu" ? "" : undefined} href="/navigation-menu">
           Navigation Menu
         </Link>
+        <Link data-active={pathnameComponent === "number-input" ? "" : undefined} href="/number-input">
+          Number Input
+        </Link>
         <Link data-active={pathnameComponent === "pagination" ? "" : undefined} href="/pagination">
           Pagination
         </Link>
