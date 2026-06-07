@@ -22,6 +22,9 @@ export default component$(() => {
         <Link data-active={pathnameComponent === "clipboard" ? "" : undefined} href="/clipboard">
           Clipboard
         </Link>
+        <Link data-active={pathnameComponent === "collapsible" ? "" : undefined} href="/collapsible">
+          Collapsible
+        </Link>
         <Link data-active={pathnameComponent === "menu" ? "" : undefined} href="/menu">
           Menu
         </Link>
