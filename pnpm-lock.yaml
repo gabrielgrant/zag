@@ -1016,6 +1016,9 @@ importers:
       '@zag-js/switch':
         specifier: workspace:*
         version: link:../../packages/machines/switch
+      '@zag-js/tabs':
+        specifier: workspace:*
+        version: link:../../packages/machines/tabs
     devDependencies:
       '@qwik.dev/core':
         specifier: 2.0.0-beta.36

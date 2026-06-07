@@ -26,7 +26,8 @@
     "@zag-js/rating-group": "workspace:*",
     "@zag-js/qwik": "workspace:*",
     "@zag-js/shared": "workspace:*",
-    "@zag-js/switch": "workspace:*"
+    "@zag-js/switch": "workspace:*",
+    "@zag-js/tabs": "workspace:*"
   },
   "devDependencies": {
     "@qwik.dev/core": "2.0.0-beta.36",
