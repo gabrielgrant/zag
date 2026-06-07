@@ -28,6 +28,9 @@ export default component$(() => {
         <Link data-active={pathnameComponent === "pagination" ? "" : undefined} href="/pagination">
           Pagination
         </Link>
+        <Link data-active={pathnameComponent === "radio-group" ? "" : undefined} href="/radio-group">
+          Radio Group
+        </Link>
         <Link data-active={pathnameComponent === "password-input" ? "" : undefined} href="/password-input">
           Password Input
         </Link>

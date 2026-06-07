@@ -67,6 +67,7 @@ const qwikTestMatch = [
   "navigation-menu.e2e.ts",
   "pagination.e2e.ts",
   "password-input.e2e.ts",
+  "radio-group.e2e.ts",
   "switch.e2e.ts",
   "visualizer.e2e.ts",
 ]

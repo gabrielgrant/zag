@@ -25,6 +25,9 @@ export default component$(() => {
           <Link href="/pagination">Pagination</Link>
         </li>
         <li>
+          <Link href="/radio-group">Radio Group</Link>
+        </li>
+        <li>
           <Link href="/password-input">Password Input</Link>
         </li>
         <li>
