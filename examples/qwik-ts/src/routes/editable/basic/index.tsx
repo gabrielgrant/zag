@@ -1,4 +1,4 @@
-import { component$, useId, useSignal, useVisibleTask$ } from "@qwik.dev/core"
+import { $, component$, useId, useSignal } from "@qwik.dev/core"
 import type { DocumentHead } from "@qwik.dev/router"
 import * as editable from "@zag-js/editable"
 import {
@@ -107,35 +107,15 @@ export default component$(() => {
     }),
     machine,
   )
-
-  useVisibleTask$(
-    ({ cleanup }) => {
-      let frame = 0
-
-      const checkFocus = () => {
-        const previewNode = preview.ref.value as HTMLElement | undefined
-        if (
-          activationMode.value === "focus" &&
-          previewNode &&
-          document.activeElement === previewNode &&
-          !machine.controller.value.service.state.matches("edit")
-        ) {
-          machine.controller.value.service.send({ type: "EDIT", src: "focus" })
-          requestAnimationFrame(() => {
-            const node = document.getElementById(inputId) as HTMLInputElement | null
-            node?.focus()
-            node?.select()
-          })
-        }
-
-        frame = requestAnimationFrame(checkFocus)
-      }
-
-      frame = requestAnimationFrame(checkFocus)
-      cleanup(() => cancelAnimationFrame(frame))
-    },
-    { strategy: "document-ready" },
-  )
+  const focusEditableInput = $(() => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const node = document.getElementById(inputId) as HTMLInputElement | null
+        node?.focus()
+        node?.select()
+      })
+    })
+  })
 
   return (
     <>
@@ -148,40 +128,10 @@ export default component$(() => {
               ref={preview.ref}
               {...preview.props}
               tabIndex={!disabled.value && !readOnly.value ? 0 : undefined}
-              onClick$={() => {
-                if (activationMode.value === "click") {
-                  api?.edit()
-                  requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                      const node = document.getElementById(inputId) as HTMLInputElement | null
-                      node?.focus()
-                      node?.select()
-                    })
-                  })
-                }
-              }}
-              onDblClick$={() => {
-                if (activationMode.value === "dblclick") {
-                  api?.edit()
-                  requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                      const node = document.getElementById(inputId) as HTMLInputElement | null
-                      node?.focus()
-                      node?.select()
-                    })
-                  })
-                }
-              }}
               onFocus$={() => {
                 if (activationMode.value === "focus") {
                   api?.edit()
-                  requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                      const node = document.getElementById(inputId) as HTMLInputElement | null
-                      node?.focus()
-                      node?.select()
-                    })
-                  })
+                  focusEditableInput()
                 }
               }}
             >
@@ -190,21 +140,7 @@ export default component$(() => {
           </div>
           <div ref={control.ref} {...control.props}>
             {!api?.editing && (
-              <button
-                data-testid="edit-button"
-                ref={editTrigger.ref}
-                {...editTrigger.props}
-                onClick$={() => {
-                  api?.edit()
-                  requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                      const node = document.getElementById(inputId) as HTMLInputElement | null
-                      node?.focus()
-                      node?.select()
-                    })
-                  })
-                }}
-              >
+              <button data-testid="edit-button" ref={editTrigger.ref} {...editTrigger.props}>
                 Edit
               </button>
             )}

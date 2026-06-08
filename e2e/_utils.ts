@@ -1,6 +1,29 @@
 import AxeBuilder from "@axe-core/playwright"
 import { expect, type Locator, type Page } from "@playwright/test"
 
+export async function waitForZagQwikSettled(page: Page) {
+  if (process.env.FRAMEWORK !== "qwik") return
+
+  await page.waitForLoadState("domcontentloaded")
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        const idle = window.requestIdleCallback ?? ((callback: IdleRequestCallback) => window.setTimeout(callback, 0))
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            idle(() => resolve())
+          })
+        })
+      }),
+  )
+}
+
+export async function goto(page: Page, url: string) {
+  const response = await page.goto(url)
+  await waitForZagQwikSettled(page)
+  return response
+}
+
 export async function a11y(page: Page, selector = "[data-part=root]", disableRules: string[] = []) {
   await page.waitForSelector(selector)
 

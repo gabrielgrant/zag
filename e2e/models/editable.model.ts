@@ -1,5 +1,5 @@
 import { expect, type Page } from "@playwright/test"
-import { a11y } from "../_utils"
+import { a11y, goto } from "../_utils"
 import { Model } from "./model"
 
 export class EditableModel extends Model {
@@ -12,7 +12,7 @@ export class EditableModel extends Model {
   }
 
   goto() {
-    return this.page.goto("/editable/basic")
+    return goto(this.page, "/editable/basic")
   }
 
   get preview() {
