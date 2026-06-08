@@ -1,16 +1,11 @@
-import { component$, useId, useSignal } from "@qwik.dev/core"
+import { component$, useId } from "@qwik.dev/core"
 import type { DocumentHead } from "@qwik.dev/router"
 import * as menu from "@zag-js/menu"
-import {
-  bindPart$,
-  createMachineSerializer,
-  normalizeProps,
-  useConnectedParts$,
-  useMachine$,
-  usePart$,
-} from "@zag-js/qwik"
+import { bindPart$, createMachineSerializer, normalizeProps, useConnectedParts$, useMachine$ } from "@zag-js/qwik"
+import { menuControls } from "@zag-js/shared"
 import { StateVisualizer } from "~/components/state-visualizer"
 import { Toolbar } from "~/components/toolbar"
+import { useControls } from "~/hooks/use-controls"
 
 const menuItems = [
   { value: "edit", label: "Edit" },
@@ -21,14 +16,12 @@ const menuItems = [
 
 export default component$(() => {
   const id = useId()
-  const closeOnSelect = useSignal(true)
-  const loopFocus = useSignal(false)
+  const controls = useControls(menuControls)
   const machine = useMachine$(() =>
     createMachineSerializer(menu.machine, {
       props: () => ({
         id,
-        closeOnSelect: closeOnSelect.value,
-        loopFocus: loopFocus.value,
+        ...controls.context.value,
       }),
     }),
   )
@@ -44,26 +37,6 @@ export default component$(() => {
   const remove = bindPart$((api) => api.getItemProps({ value: "delete" }), parts)
   const exportItem = bindPart$((api) => api.getItemProps({ value: "export" }), parts)
   const items = [edit, duplicate, remove, exportItem]
-  const closeOnSelectControl = usePart$(
-    () => ({
-      onInput(event: Event) {
-        const checked = (event.currentTarget as HTMLInputElement).checked
-        closeOnSelect.value = checked
-        machine.controller.value.updateProps({ closeOnSelect: checked })
-      },
-    }),
-    machine,
-  )
-  const loopFocusControl = usePart$(
-    () => ({
-      onInput(event: Event) {
-        const checked = (event.currentTarget as HTMLInputElement).checked
-        loopFocus.value = checked
-        machine.controller.value.updateProps({ loopFocus: checked })
-      },
-    }),
-    machine,
-  )
   return (
     <>
       <main>
@@ -82,31 +55,12 @@ export default component$(() => {
           </div>
         </div>
       </main>
-      <Toolbar controls>
-        <div q:slot="controls" class="controls-container">
-          <div class="checkbox">
-            <input
-              ref={closeOnSelectControl.ref}
-              checked={closeOnSelect.value}
-              data-testid="closeOnSelect"
-              id="closeOnSelect"
-              {...closeOnSelectControl.props}
-              type="checkbox"
-            />
-            <label for="closeOnSelect">closeOnSelect</label>
-          </div>
-          <div class="checkbox">
-            <input
-              ref={loopFocusControl.ref}
-              checked={loopFocus.value}
-              data-testid="loopFocus"
-              id="loopFocus"
-              {...loopFocusControl.props}
-              type="checkbox"
-            />
-            <label for="loopFocus">loopFocus</label>
-          </div>
-        </div>
+      <Toolbar
+        controls={controls}
+        onControlsChange$={(context) => {
+          machine.controller.value.updateProps(context)
+        }}
+      >
         <StateVisualizer controller={machine.controller} revision={machine.revision} />
       </Toolbar>
     </>

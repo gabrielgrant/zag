@@ -1,27 +1,20 @@
-import { component$, useId, useSignal } from "@qwik.dev/core"
+import { component$, useId } from "@qwik.dev/core"
 import type { DocumentHead } from "@qwik.dev/router"
 import * as collapsible from "@zag-js/collapsible"
-import {
-  bindPart$,
-  createMachineSerializer,
-  normalizeProps,
-  useConnectedParts$,
-  useMachine$,
-  usePart$,
-} from "@zag-js/qwik"
+import { bindPart$, createMachineSerializer, normalizeProps, useConnectedParts$, useMachine$ } from "@zag-js/qwik"
+import { collapsibleControls } from "@zag-js/shared"
 import { StateVisualizer } from "~/components/state-visualizer"
 import { Toolbar } from "~/components/toolbar"
+import { useControls } from "~/hooks/use-controls"
 
 export default component$(() => {
   const id = useId()
-  const disabled = useSignal(false)
-  const dir = useSignal<"ltr" | "rtl">("ltr")
+  const controls = useControls(collapsibleControls)
   const machine = useMachine$(() =>
     createMachineSerializer(collapsible.machine, {
       props: () => ({
         id,
-        disabled: disabled.value,
-        dir: dir.value,
+        ...controls.context.value,
       }),
     }),
   )
@@ -32,26 +25,6 @@ export default component$(() => {
   const trigger = bindPart$((api) => api.getTriggerProps(), parts)
   const indicator = bindPart$((api) => api.getIndicatorProps(), parts)
   const content = bindPart$((api) => api.getContentProps(), parts)
-  const disabledControl = usePart$(
-    () => ({
-      onInput(event: Event) {
-        const checked = (event.currentTarget as HTMLInputElement).checked
-        disabled.value = checked
-        machine.controller.value.updateProps({ disabled: checked })
-      },
-    }),
-    machine,
-  )
-  const dirControl = usePart$(
-    () => ({
-      onInput(event: Event) {
-        const value = (event.currentTarget as HTMLSelectElement).value as "ltr" | "rtl"
-        dir.value = value
-        machine.controller.value.updateProps({ dir: value })
-      },
-    }),
-    machine,
-  )
 
   return (
     <>
@@ -85,27 +58,12 @@ export default component$(() => {
         </div>
       </main>
 
-      <Toolbar controls>
-        <div q:slot="controls" class="controls-container">
-          <div class="checkbox">
-            <input
-              checked={disabled.value}
-              data-testid="disabled"
-              id="collapsible-disabled"
-              ref={disabledControl.ref}
-              type="checkbox"
-              {...disabledControl.props}
-            />
-            <label for="collapsible-disabled">disabled</label>
-          </div>
-          <div class="field">
-            <label for="collapsible-dir">dir</label>
-            <select data-testid="dir" id="collapsible-dir" ref={dirControl.ref} value={dir.value} {...dirControl.props}>
-              <option value="ltr">ltr</option>
-              <option value="rtl">rtl</option>
-            </select>
-          </div>
-        </div>
+      <Toolbar
+        controls={controls}
+        onControlsChange$={(context) => {
+          machine.controller.value.updateProps(context)
+        }}
+      >
         <StateVisualizer controller={machine.controller} revision={machine.revision} />
       </Toolbar>
     </>

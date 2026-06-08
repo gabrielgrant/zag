@@ -1,18 +1,18 @@
-import { component$, useId, useSignal } from "@qwik.dev/core"
+import { component$, useId } from "@qwik.dev/core"
 import type { DocumentHead } from "@qwik.dev/router"
 import * as accordion from "@zag-js/accordion"
-import { accordionData } from "@zag-js/shared"
+import { accordionControls, accordionData } from "@zag-js/shared"
 import {
   bindPart$,
   createMachineSerializer,
   normalizeProps,
   useConnectedParts$,
   useMachine$,
-  usePart$,
   type QwikMachineSignal,
 } from "@zag-js/qwik"
 import { StateVisualizer } from "~/components/state-visualizer"
 import { Toolbar } from "~/components/toolbar"
+import { useControls } from "~/hooks/use-controls"
 
 interface AccordionItemProps {
   label: string
@@ -47,40 +47,18 @@ const AccordionItem = component$<AccordionItemProps>(({ label, machine, value })
 
 export default component$(() => {
   const id = useId()
-  const collapsible = useSignal(false)
-  const multiple = useSignal(false)
+  const controls = useControls(accordionControls)
   const machine = useMachine$(() =>
     createMachineSerializer(accordion.machine, {
       props: () => ({
         id,
-        collapsible: collapsible.value,
-        multiple: multiple.value,
+        ...controls.context.value,
       }),
     }),
   )
 
   const parts = useConnectedParts$(() => accordion.connect(machine.controller.value.service, normalizeProps), machine)
   const root = bindPart$((api) => api.getRootProps(), parts)
-  const collapsibleControl = usePart$(
-    () => ({
-      onInput(event: Event) {
-        const checked = (event.currentTarget as HTMLInputElement).checked
-        collapsible.value = checked
-        machine.controller.value.updateProps({ collapsible: checked })
-      },
-    }),
-    machine,
-  )
-  const multipleControl = usePart$(
-    () => ({
-      onInput(event: Event) {
-        const checked = (event.currentTarget as HTMLInputElement).checked
-        multiple.value = checked
-        machine.controller.value.updateProps({ multiple: checked })
-      },
-    }),
-    machine,
-  )
 
   return (
     <>
@@ -92,31 +70,12 @@ export default component$(() => {
         </div>
       </main>
 
-      <Toolbar controls>
-        <div q:slot="controls" class="controls-container">
-          <div class="checkbox">
-            <input
-              checked={collapsible.value}
-              data-testid="collapsible"
-              id="accordion-collapsible"
-              ref={collapsibleControl.ref}
-              type="checkbox"
-              {...collapsibleControl.props}
-            />
-            <label for="accordion-collapsible">collapsible</label>
-          </div>
-          <div class="checkbox">
-            <input
-              checked={multiple.value}
-              data-testid="multiple"
-              id="accordion-multiple"
-              ref={multipleControl.ref}
-              type="checkbox"
-              {...multipleControl.props}
-            />
-            <label for="accordion-multiple">multiple</label>
-          </div>
-        </div>
+      <Toolbar
+        controls={controls}
+        onControlsChange$={(context) => {
+          machine.controller.value.updateProps(context)
+        }}
+      >
         <StateVisualizer controller={machine.controller} revision={machine.revision} />
       </Toolbar>
     </>

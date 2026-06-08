@@ -12,10 +12,14 @@ export function useControls<T extends ControlRecord>(config: T) {
   }
 }
 
+export type UseControlsReturn<T extends ControlRecord = ControlRecord> = ReturnType<typeof useControls<T>>
+
 interface ControlsProps {
-  config: ControlRecord
+  controls: {
+    config: ControlRecord
+    state: Signal<any>
+  }
   onChange$?: QRL<(context: Record<string, any>) => void>
-  state: Signal<Record<string, any>>
 }
 
 function getContext(config: ControlRecord, state: Record<string, any>) {
@@ -30,19 +34,19 @@ function getNextState(state: Record<string, any>, key: string, value: any) {
 
 export const Controls = component$<ControlsProps>((props) => {
   const setState = $((key: string, value: any) => {
-    const nextState = getNextState(props.state.value, key, value)
-    props.state.value = nextState
-    props.onChange$?.(getContext(props.config, nextState))
+    const nextState = getNextState(props.controls.state.value, key, value)
+    props.controls.state.value = nextState
+    props.onChange$?.(getContext(props.controls.config, nextState))
   })
 
   return (
     <div class="controls-container">
-      {Object.keys(props.config).map((key) => {
-        const control = props.config[key]
+      {Object.keys(props.controls.config).map((key) => {
+        const control = props.controls.config[key]
         if (!control) return null
 
         const { label = key, type } = control
-        const value = deepGet(props.state.value, key)
+        const value = deepGet(props.controls.state.value, key)
 
         switch (type) {
           case "boolean":

@@ -1,16 +1,11 @@
-import { component$, useId, useSignal } from "@qwik.dev/core"
+import { component$, useId } from "@qwik.dev/core"
 import type { DocumentHead } from "@qwik.dev/router"
 import * as passwordInput from "@zag-js/password-input"
-import {
-  bindPart$,
-  createMachineSerializer,
-  normalizeProps,
-  useConnectedParts$,
-  useMachine$,
-  usePart$,
-} from "@zag-js/qwik"
+import { bindPart$, createMachineSerializer, normalizeProps, useConnectedParts$, useMachine$ } from "@zag-js/qwik"
+import { passwordInputControls } from "@zag-js/shared"
 import { StateVisualizer } from "~/components/state-visualizer"
 import { Toolbar } from "~/components/toolbar"
+import { useControls } from "~/hooks/use-controls"
 
 const EyeIcon = component$(() => {
   return (
@@ -54,16 +49,12 @@ const EyeOffIcon = component$(() => {
 
 export default component$(() => {
   const id = useId()
-  const disabled = useSignal(false)
-  const readOnly = useSignal(false)
-  const ignorePasswordManagers = useSignal(false)
+  const controls = useControls(passwordInputControls)
   const machine = useMachine$(() =>
     createMachineSerializer(passwordInput.machine, {
       props: () => ({
         id,
-        disabled: disabled.value,
-        readOnly: readOnly.value,
-        ignorePasswordManagers: ignorePasswordManagers.value,
+        ...controls.context.value,
       }),
     }),
   )
@@ -79,36 +70,6 @@ export default component$(() => {
   const input = bindPart$((api) => api.getInputProps(), parts)
   const visibilityTrigger = bindPart$((api) => api.getVisibilityTriggerProps(), parts)
   const indicator = bindPart$((api) => api.getIndicatorProps(), parts)
-  const disabledControl = usePart$(
-    () => ({
-      onInput(event: Event) {
-        const checked = (event.currentTarget as HTMLInputElement).checked
-        disabled.value = checked
-        machine.controller.value.updateProps({ disabled: checked })
-      },
-    }),
-    machine,
-  )
-  const readOnlyControl = usePart$(
-    () => ({
-      onInput(event: Event) {
-        const checked = (event.currentTarget as HTMLInputElement).checked
-        readOnly.value = checked
-        machine.controller.value.updateProps({ readOnly: checked })
-      },
-    }),
-    machine,
-  )
-  const passwordManagersControl = usePart$(
-    () => ({
-      onInput(event: Event) {
-        const checked = (event.currentTarget as HTMLInputElement).checked
-        ignorePasswordManagers.value = checked
-        machine.controller.value.updateProps({ ignorePasswordManagers: checked })
-      },
-    }),
-    machine,
-  )
 
   return (
     <>
@@ -128,42 +89,12 @@ export default component$(() => {
         </div>
       </main>
 
-      <Toolbar controls>
-        <div q:slot="controls" class="controls-container">
-          <div class="checkbox">
-            <input
-              ref={disabledControl.ref}
-              checked={disabled.value}
-              data-testid="disabled"
-              id="password-disabled"
-              type="checkbox"
-              {...disabledControl.props}
-            />
-            <label for="password-disabled">disabled</label>
-          </div>
-          <div class="checkbox">
-            <input
-              ref={readOnlyControl.ref}
-              checked={readOnly.value}
-              data-testid="readOnly"
-              id="password-read-only"
-              type="checkbox"
-              {...readOnlyControl.props}
-            />
-            <label for="password-read-only">readOnly</label>
-          </div>
-          <div class="checkbox">
-            <input
-              ref={passwordManagersControl.ref}
-              checked={ignorePasswordManagers.value}
-              data-testid="ignorePasswordManagers"
-              id="password-managers"
-              type="checkbox"
-              {...passwordManagersControl.props}
-            />
-            <label for="password-managers">ignorePasswordManagers</label>
-          </div>
-        </div>
+      <Toolbar
+        controls={controls}
+        onControlsChange$={(context) => {
+          machine.controller.value.updateProps(context)
+        }}
+      >
         <StateVisualizer controller={machine.controller} revision={machine.revision} />
       </Toolbar>
     </>

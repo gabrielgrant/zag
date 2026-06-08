@@ -1,28 +1,21 @@
-import { component$, useId, useSignal } from "@qwik.dev/core"
+import { component$, useId } from "@qwik.dev/core"
 import type { DocumentHead } from "@qwik.dev/router"
 import * as zagSwitch from "@zag-js/switch"
-import {
-  bindPart$,
-  createMachineSerializer,
-  normalizeProps,
-  useConnectedParts$,
-  useMachine$,
-  usePart$,
-} from "@zag-js/qwik"
+import { bindPart$, createMachineSerializer, normalizeProps, useConnectedParts$, useMachine$ } from "@zag-js/qwik"
+import { switchControls } from "@zag-js/shared"
 import { StateVisualizer } from "~/components/state-visualizer"
 import { Toolbar } from "~/components/toolbar"
+import { useControls } from "~/hooks/use-controls"
 
 export default component$(() => {
   const id = useId()
-  const disabled = useSignal(false)
-  const readOnly = useSignal(false)
+  const controls = useControls(switchControls)
   const machine = useMachine$(() =>
     createMachineSerializer(zagSwitch.machine, {
       props: () => ({
         name: "switch",
         id,
-        disabled: disabled.value,
-        readOnly: readOnly.value,
+        ...controls.context.value,
       }),
     }),
   )
@@ -34,26 +27,6 @@ export default component$(() => {
   const control = bindPart$((api) => api.getControlProps(), parts)
   const thumb = bindPart$((api) => api.getThumbProps(), parts)
   const label = bindPart$((api) => api.getLabelProps(), parts)
-  const disabledControl = usePart$(
-    () => ({
-      onInput(event: Event) {
-        const checked = (event.currentTarget as HTMLInputElement).checked
-        disabled.value = checked
-        machine.controller.value.updateProps({ disabled: checked })
-      },
-    }),
-    machine,
-  )
-  const readOnlyControl = usePart$(
-    () => ({
-      onInput(event: Event) {
-        const checked = (event.currentTarget as HTMLInputElement).checked
-        readOnly.value = checked
-        machine.controller.value.updateProps({ readOnly: checked })
-      },
-    }),
-    machine,
-  )
 
   return (
     <>
@@ -69,31 +42,12 @@ export default component$(() => {
         </label>
       </main>
 
-      <Toolbar controls>
-        <div q:slot="controls" class="controls-container">
-          <div class="checkbox">
-            <input
-              ref={disabledControl.ref}
-              checked={disabled.value}
-              data-testid="disabled"
-              id="switch-disabled"
-              type="checkbox"
-              {...disabledControl.props}
-            />
-            <label for="switch-disabled">disabled</label>
-          </div>
-          <div class="checkbox">
-            <input
-              ref={readOnlyControl.ref}
-              checked={readOnly.value}
-              data-testid="readOnly"
-              id="switch-read-only"
-              type="checkbox"
-              {...readOnlyControl.props}
-            />
-            <label for="switch-read-only">readOnly</label>
-          </div>
-        </div>
+      <Toolbar
+        controls={controls}
+        onControlsChange$={(context) => {
+          machine.controller.value.updateProps(context)
+        }}
+      >
         <StateVisualizer controller={machine.controller} revision={machine.revision} />
       </Toolbar>
     </>

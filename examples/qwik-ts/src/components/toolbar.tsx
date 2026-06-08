@@ -1,19 +1,24 @@
-import { component$, Slot, useSignal } from "@qwik.dev/core"
+import { component$, Slot, useSignal, type QRL } from "@qwik.dev/core"
+import { Controls, type UseControlsReturn } from "~/hooks/use-controls"
 
 interface ToolbarProps {
-  controls?: boolean
+  controls?: boolean | UseControlsReturn
+  onControlsChange$?: QRL<(context: Record<string, any>) => void>
   viz?: boolean
 }
 
 const dataAttr = (condition: boolean) => (condition ? "" : undefined)
+const hasControls = (controls: ToolbarProps["controls"]) => !!controls
+const isControlsStore = (controls: ToolbarProps["controls"]): controls is UseControlsReturn =>
+  typeof controls === "object" && controls !== null
 
 export const Toolbar = component$<ToolbarProps>((props) => {
-  const active = useSignal(props.viz ? 1 : props.controls ? 0 : 1)
+  const active = useSignal(props.viz ? 1 : hasControls(props.controls) ? 0 : 1)
 
   return (
     <div class="toolbar">
       <nav>
-        {props.controls && (
+        {hasControls(props.controls) && (
           <button data-active={dataAttr(active.value === 0)} onClick$={() => (active.value = 0)}>
             Controls
           </button>
@@ -23,9 +28,13 @@ export const Toolbar = component$<ToolbarProps>((props) => {
         </button>
       </nav>
       <div>
-        {props.controls && (
+        {hasControls(props.controls) && (
           <div data-content data-active={dataAttr(active.value === 0)}>
-            <Slot name="controls" />
+            {isControlsStore(props.controls) ? (
+              <Controls controls={props.controls} onChange$={props.onControlsChange$} />
+            ) : (
+              <Slot name="controls" />
+            )}
           </div>
         )}
         <div data-content data-active={dataAttr(active.value === 1)}>

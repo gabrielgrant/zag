@@ -5,7 +5,7 @@ import { bindPart$, createMachineSerializer, normalizeProps, useConnectedParts$,
 import { numberInputControls } from "@zag-js/shared"
 import { StateVisualizer } from "~/components/state-visualizer"
 import { Toolbar } from "~/components/toolbar"
-import { Controls, useControls } from "~/hooks/use-controls"
+import { useControls } from "~/hooks/use-controls"
 
 export default component$(() => {
   const id = useId()
@@ -49,15 +49,12 @@ export default component$(() => {
         </div>
       </main>
 
-      <Toolbar controls>
-        <Controls
-          config={controls.config}
-          onChange$={(context) => {
-            machine.controller.value.updateProps(context)
-          }}
-          q:slot="controls"
-          state={controls.state}
-        />
+      <Toolbar
+        controls={controls}
+        onControlsChange$={(context) => {
+          machine.controller.value.updateProps(context)
+        }}
+      >
         <StateVisualizer controller={machine.controller} revision={machine.revision} />
       </Toolbar>
     </>

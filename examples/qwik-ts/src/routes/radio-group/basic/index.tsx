@@ -1,4 +1,4 @@
-import { component$, useId, useSignal } from "@qwik.dev/core"
+import { component$, useId } from "@qwik.dev/core"
 import type { DocumentHead } from "@qwik.dev/router"
 import * as radio from "@zag-js/radio-group"
 import {
@@ -7,12 +7,12 @@ import {
   normalizeProps,
   useConnectedParts$,
   useMachine$,
-  usePart$,
   type QwikMachineSignal,
 } from "@zag-js/qwik"
-import { radioData } from "@zag-js/shared"
+import { radioControls, radioData } from "@zag-js/shared"
 import { StateVisualizer } from "~/components/state-visualizer"
 import { Toolbar } from "~/components/toolbar"
+import { useControls } from "~/hooks/use-controls"
 
 interface RadioItemProps {
   machine: QwikMachineSignal<any>
@@ -40,15 +40,13 @@ const RadioItem = component$<RadioItemProps>(({ machine, value, label }) => {
 
 export default component$(() => {
   const id = useId()
-  const disabled = useSignal(false)
-  const readOnly = useSignal(false)
+  const controls = useControls(radioControls)
   const machine = useMachine$(() =>
     createMachineSerializer(radio.machine, {
       props: () => ({
         id,
         name: "fruits",
-        disabled: disabled.value,
-        readOnly: readOnly.value,
+        ...controls.context.value,
       }),
     }),
   )
@@ -58,26 +56,6 @@ export default component$(() => {
   const root = bindPart$((api) => api.getRootProps(), parts)
   const label = bindPart$((api) => api.getLabelProps(), parts)
   const indicator = bindPart$((api) => api.getIndicatorProps(), parts)
-  const disabledControl = usePart$(
-    () => ({
-      onInput(event: Event) {
-        const checked = (event.currentTarget as HTMLInputElement).checked
-        disabled.value = checked
-        machine.controller.value.updateProps({ disabled: checked })
-      },
-    }),
-    machine,
-  )
-  const readOnlyControl = usePart$(
-    () => ({
-      onInput(event: Event) {
-        const checked = (event.currentTarget as HTMLInputElement).checked
-        readOnly.value = checked
-        machine.controller.value.updateProps({ readOnly: checked })
-      },
-    }),
-    machine,
-  )
 
   return (
     <>
@@ -104,31 +82,12 @@ export default component$(() => {
         </form>
       </main>
 
-      <Toolbar controls>
-        <div q:slot="controls" class="controls-container">
-          <div class="checkbox">
-            <input
-              ref={disabledControl.ref}
-              checked={disabled.value}
-              data-testid="disabled"
-              id="radio-disabled"
-              type="checkbox"
-              {...disabledControl.props}
-            />
-            <label for="radio-disabled">disabled</label>
-          </div>
-          <div class="checkbox">
-            <input
-              ref={readOnlyControl.ref}
-              checked={readOnly.value}
-              data-testid="readOnly"
-              id="radio-read-only"
-              type="checkbox"
-              {...readOnlyControl.props}
-            />
-            <label for="radio-read-only">readOnly</label>
-          </div>
-        </div>
+      <Toolbar
+        controls={controls}
+        onControlsChange$={(context) => {
+          machine.controller.value.updateProps(context)
+        }}
+      >
         <StateVisualizer controller={machine.controller} revision={machine.revision} />
       </Toolbar>
     </>

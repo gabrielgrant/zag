@@ -15,6 +15,10 @@ just example-level wiring.
     [editable/basic/index.tsx](/home/gabriel/repos/zag.worktrees/qwik-adapter-v2/examples/qwik-ts/src/routes/editable/basic/index.tsx:1)
     explicitly sets preview `tabIndex` and includes a client-side focus watcher/activation assist so the shared tests
     pass.
+  - Shared controls follow-up: unlike most existing controlled examples, `editable/basic` still keeps its controls
+    local. A direct refactor to the generic Qwik `useControls` store made the preview enter edit mode without
+    reliably transferring focus into the input in the shared Playwright suite, so this example needs either a cleaner
+    adapter-level focusability fix or a more robust Qwik controls-store pattern before it should be converted.
   - Status: open adapter follow-up; the Qwik adapter should preserve this initial focusability without requiring
     example-level reinforcement.
 
