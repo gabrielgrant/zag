@@ -22,10 +22,26 @@ const inputEditVersions = new WeakMap<Element, number>()
 const replayedInitialInputs = new WeakSet<Element>()
 let activeInputNode: HTMLInputElement | HTMLTextAreaElement | undefined
 let currentEventType: string | undefined
+let currentInputType: string | undefined
+
+function shouldPreserveActiveInputValue(eventObject: Event) {
+  if (!(eventObject instanceof InputEvent)) return true
+  if (!eventObject.inputType) return true
+  if (eventObject.inputType === "insertFromPaste") return false
+  return eventObject.inputType.startsWith("insert")
+}
+
+function shouldPreserveCurrentInputValue() {
+  if (currentEventType !== "input") return false
+  if (!currentInputType) return true
+  if (currentInputType === "insertFromPaste") return false
+  return currentInputType.startsWith("insert")
+}
 
 function preserveActiveInputValue(eventObject: Event) {
   const node = eventObject.currentTarget
   if (!(node instanceof HTMLInputElement || node instanceof HTMLTextAreaElement)) return
+  if (!shouldPreserveActiveInputValue(eventObject)) return
 
   activelyEditedInputs.add(node)
   activeInputNode = node
@@ -164,7 +180,7 @@ function setStaticProp(node: Element, key: string, value: unknown) {
     node.defaultValue = value == null ? "" : String(value)
     node.setAttribute(attribute, node.defaultValue)
 
-    if (currentEventType === "input") {
+    if (shouldPreserveCurrentInputValue()) {
       activelyEditedInputs.add(node)
       return
     }
@@ -297,14 +313,20 @@ export function bindProps(node: Element, props: ZagProps): VoidFunction {
       listener,
       wrapped(eventObject: Event) {
         const previousEventType = currentEventType
+        const previousInputType = currentInputType
         currentEventType = eventObject.type
+        currentInputType = eventObject instanceof InputEvent ? eventObject.inputType : undefined
         try {
           entry.listener(eventObject)
         } finally {
-          if (eventObject.type === "input") preserveActiveInputValue(eventObject)
+          if (eventObject.type === "input") {
+            if (shouldPreserveActiveInputValue(eventObject)) preserveActiveInputValue(eventObject)
+            else clearActiveInputValue(eventObject)
+          }
           if (eventObject.type === "focusout" || eventObject.type === "blur") clearActiveInputValue(eventObject)
           if (!["beforeinput", "input", "keydown"].includes(eventObject.type)) clearActiveInputNode()
           currentEventType = previousEventType
+          currentInputType = previousInputType
         }
       },
     }

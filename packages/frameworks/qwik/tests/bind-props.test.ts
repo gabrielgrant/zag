@@ -113,7 +113,7 @@ describe("bindProps", () => {
     expect(second).toHaveBeenCalledOnce()
   })
 
-  test("does not overwrite an active input value from defaultValue after input events", () => {
+  test("does not overwrite an active input value from defaultValue after text insertion events", () => {
     const input = document.createElement("input")
     const cleanup = bindProps(input, {
       defaultValue: "",
@@ -123,11 +123,48 @@ describe("bindProps", () => {
     })
 
     input.value = "$5555.00"
-    input.dispatchEvent(new Event("input", { bubbles: true }))
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText" }))
     bindProps(input, { defaultValue: "$5,555.00" })
 
     expect(input.value).toBe("$5555.00")
     expect(input.defaultValue).toBe("$5,555.00")
+    cleanup()
+  })
+
+  test("allows non-insertion input events to apply machine-driven defaultValue changes", () => {
+    const input = document.createElement("input")
+    const cleanup = bindProps(input, {
+      defaultValue: "2",
+      onInput() {
+        bindProps(input, { defaultValue: "3" })
+      },
+    })
+
+    input.value = ""
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "deleteContentBackward" }))
+    bindProps(input, { defaultValue: "3" })
+
+    expect(input.value).toBe("3")
+    expect(input.defaultValue).toBe("3")
+    cleanup()
+  })
+
+  test("clears stale active input preservation after non-insertion input events", () => {
+    const input = document.createElement("input")
+    const cleanup = bindProps(input, {
+      defaultValue: "",
+      onInput() {},
+    })
+
+    input.value = "2"
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText" }))
+
+    input.value = ""
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "deleteContentBackward" }))
+    bindProps(input, { defaultValue: "3" })
+
+    expect(input.value).toBe("3")
+    expect(input.defaultValue).toBe("3")
     cleanup()
   })
 
