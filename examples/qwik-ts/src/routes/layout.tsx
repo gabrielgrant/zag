@@ -13,6 +13,9 @@ export default component$(() => {
         <Link data-active={pathnameComponent === "accordion" ? "" : undefined} href="/accordion">
           Accordion
         </Link>
+        <Link data-active={pathnameComponent === "angle-slider" ? "" : undefined} href="/angle-slider">
+          Angle Slider
+        </Link>
         <Link data-active={pathnameComponent === "avatar" ? "" : undefined} href="/avatar">
           Avatar
         </Link>

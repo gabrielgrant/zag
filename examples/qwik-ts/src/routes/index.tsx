@@ -10,6 +10,9 @@ export default component$(() => {
           <Link href="/accordion">Accordion</Link>
         </li>
         <li>
+          <Link href="/angle-slider">Angle Slider</Link>
+        </li>
+        <li>
           <Link href="/avatar">Avatar</Link>
         </li>
         <li>

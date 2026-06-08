@@ -56,6 +56,7 @@ const webServer = getWebServer()
 
 const qwikTestMatch = [
   "accordion.e2e.ts",
+  "angle-slider.e2e.ts",
   "avatar.e2e.ts",
   "checkbox.e2e.ts",
   "clipboard.e2e.ts",
