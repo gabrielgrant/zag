@@ -49,6 +49,9 @@ export default component$(() => {
           <Link href="/password-input">Password Input</Link>
         </li>
         <li>
+          <Link href="/pin-input">Pin Input</Link>
+        </li>
+        <li>
           <Link href="/switch">Switch</Link>
         </li>
         <li>

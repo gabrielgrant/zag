@@ -24,6 +24,7 @@
     "@zag-js/navigation-menu": "workspace:*",
     "@zag-js/editable": "workspace:*",
     "@zag-js/password-input": "workspace:*",
+    "@zag-js/pin-input": "workspace:*",
     "@zag-js/number-input": "workspace:*",
     "@zag-js/pagination": "workspace:*",
     "@zag-js/radio-group": "workspace:*",

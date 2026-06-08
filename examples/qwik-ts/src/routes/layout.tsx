@@ -52,6 +52,9 @@ export default component$(() => {
         <Link data-active={pathnameComponent === "password-input" ? "" : undefined} href="/password-input">
           Password Input
         </Link>
+        <Link data-active={pathnameComponent === "pin-input" ? "" : undefined} href="/pin-input">
+          Pin Input
+        </Link>
         <Link data-active={pathnameComponent === "switch" ? "" : undefined} href="/switch">
           Switch
         </Link>
