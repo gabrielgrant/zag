@@ -88,6 +88,9 @@ Qwik event QRLs are asynchronous by default. Some Zag handlers conditionally cal
 those generated handlers at the normal Qwik event edge can run too late. A `sync$()` wrapper is also intentionally too
 restrictive to close over the live Zag controller.
 
+See [QRL_DISPATCHER_REFACTOR.md](./QRL_DISPATCHER_REFACTOR.md) for notes on a possible future QRL-dispatcher adapter
+experiment. The current adapter intentionally uses native event bindings for generated Zag handlers.
+
 The adapter handles that split internally:
 
 1. `useMachine$()` creates a serializer-backed `QwikMachine`.
