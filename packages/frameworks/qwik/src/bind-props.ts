@@ -19,16 +19,99 @@ const stylePropsByNode = new WeakMap<Element, Set<string>>()
 const stringStyleNodes = new WeakSet<Element>()
 const activelyEditedInputs = new WeakSet<Element>()
 const inputEditVersions = new WeakMap<Element, number>()
+const inputEventVersions = new WeakMap<Element, number>()
+const lastBeforeInputType = new WeakMap<Element, string>()
 const replayedInitialInputs = new WeakSet<Element>()
 let activeInputNode: HTMLInputElement | HTMLTextAreaElement | undefined
 let currentEventType: string | undefined
 let currentInputType: string | undefined
 
+function getInputType(eventObject: Event) {
+  const inputType = (eventObject as { inputType?: unknown }).inputType
+  return typeof inputType === "string" ? inputType : undefined
+}
+
+function recordBeforeInputType(eventObject: Event) {
+  const node = eventObject.currentTarget
+  if (!(node instanceof HTMLInputElement || node instanceof HTMLTextAreaElement)) return
+
+  const inputType = getInputType(eventObject)
+  if (inputType) lastBeforeInputType.set(node, inputType)
+}
+
+function getEffectiveInputType(eventObject: Event) {
+  const inputType = getInputType(eventObject)
+  if (inputType) return inputType
+
+  const node = eventObject.currentTarget
+  if (!(node instanceof HTMLInputElement || node instanceof HTMLTextAreaElement)) return
+  return lastBeforeInputType.get(node)
+}
+
+function hydrateMissingInputType(eventObject: Event) {
+  if (eventObject.type !== "input") return
+  if (getInputType(eventObject)) return
+
+  const inputType = getEffectiveInputType(eventObject)
+  if (!inputType) return
+
+  try {
+    Object.defineProperty(eventObject, "inputType", { configurable: true, value: inputType })
+  } catch {
+    // Some browser events may expose readonly descriptors that cannot be patched.
+  }
+}
+
+function bumpInputEventVersion(node: Element) {
+  inputEventVersions.set(node, (inputEventVersions.get(node) ?? 0) + 1)
+}
+
+function synthesizeCutInputEvent(eventObject: Event) {
+  const node = eventObject.currentTarget
+  if (!(node instanceof HTMLInputElement || node instanceof HTMLTextAreaElement)) return
+
+  const value = node.value
+  const version = inputEventVersions.get(node) ?? 0
+
+  setTimeout(() => {
+    if (!node.isConnected) return
+    if ((inputEventVersions.get(node) ?? 0) !== version) return
+    if (node.value === value) return
+
+    node.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "deleteByCut" }))
+  })
+}
+
+function synthesizeKeyboardCutInputEvent(eventObject: Event) {
+  if (!(eventObject instanceof KeyboardEvent)) return
+  if (eventObject.defaultPrevented) return
+  if (eventObject.key.toLowerCase() !== "x") return
+  if (!eventObject.ctrlKey && !eventObject.metaKey) return
+
+  const node = eventObject.currentTarget
+  if (!(node instanceof HTMLInputElement || node instanceof HTMLTextAreaElement)) return
+  const selectionStart = node.selectionStart
+  const selectionEnd = node.selectionEnd
+  if (selectionStart == null || selectionEnd == null || selectionStart === selectionEnd) return
+
+  const value = node.value
+  const version = inputEventVersions.get(node) ?? 0
+
+  setTimeout(() => {
+    if (!node.isConnected) return
+    if ((inputEventVersions.get(node) ?? 0) !== version) return
+    if (node.value !== value) return
+
+    node.value = `${value.slice(0, selectionStart)}${value.slice(selectionEnd)}`
+    node.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "deleteByCut" }))
+  })
+}
+
 function shouldPreserveActiveInputValue(eventObject: Event) {
-  if (!(eventObject instanceof InputEvent)) return true
-  if (!eventObject.inputType) return true
-  if (eventObject.inputType === "insertFromPaste") return false
-  return eventObject.inputType.startsWith("insert")
+  const inputType = getEffectiveInputType(eventObject)
+  if (!inputType) return true
+  if (inputType === "insertFromPaste") return false
+  return inputType.startsWith("insert")
 }
 
 function shouldPreserveCurrentInputValue() {
@@ -301,6 +384,7 @@ export function bindProps(node: Element, props: ZagProps): VoidFunction {
   syncStaticProps(node, props)
   const { eventProps } = splitProps(props)
   const nextEvents = new Set(Object.keys(eventProps))
+  if (eventProps.input && !eventProps.cut) nextEvents.add("cut")
 
   Object.entries(eventProps).forEach(([event, listener]) => {
     const current = activeBinding.eventBindings.get(event)
@@ -315,16 +399,23 @@ export function bindProps(node: Element, props: ZagProps): VoidFunction {
         const previousEventType = currentEventType
         const previousInputType = currentInputType
         currentEventType = eventObject.type
-        currentInputType = eventObject instanceof InputEvent ? eventObject.inputType : undefined
+        if (eventObject.type === "beforeinput") recordBeforeInputType(eventObject)
+        hydrateMissingInputType(eventObject)
+        currentInputType = getEffectiveInputType(eventObject)
         try {
           entry.listener(eventObject)
         } finally {
           if (eventObject.type === "input") {
+            if (eventObject.currentTarget instanceof Element) bumpInputEventVersion(eventObject.currentTarget)
             if (shouldPreserveActiveInputValue(eventObject)) preserveActiveInputValue(eventObject)
             else clearActiveInputValue(eventObject)
           }
+          if (eventObject.type === "keydown" && eventProps.input) synthesizeKeyboardCutInputEvent(eventObject)
           if (eventObject.type === "focusout" || eventObject.type === "blur") clearActiveInputValue(eventObject)
           if (!["beforeinput", "input", "keydown"].includes(eventObject.type)) clearActiveInputNode()
+          if (eventObject.type === "input" && eventObject.currentTarget instanceof Element) {
+            lastBeforeInputType.delete(eventObject.currentTarget)
+          }
           currentEventType = previousEventType
           currentInputType = previousInputType
         }
@@ -333,6 +424,17 @@ export function bindProps(node: Element, props: ZagProps): VoidFunction {
     activeBinding.eventBindings.set(event, entry)
     node.addEventListener(event, entry.wrapped)
   })
+
+  if (eventProps.input && !eventProps.cut && !activeBinding.eventBindings.has("cut")) {
+    const entry = {
+      listener: synthesizeCutInputEvent as EventListener,
+      wrapped(eventObject: Event) {
+        entry.listener(eventObject)
+      },
+    }
+    activeBinding.eventBindings.set("cut", entry)
+    node.addEventListener("cut", entry.wrapped)
+  }
 
   activeBinding.eventBindings.forEach(({ wrapped }, event) => {
     if (nextEvents.has(event)) return

@@ -149,6 +149,150 @@ describe("bindProps", () => {
     cleanup()
   })
 
+  test("reads inputType structurally for browser and cross-realm input events", () => {
+    const input = document.createElement("input")
+    const cleanup = bindProps(input, {
+      defaultValue: "2",
+      onInput() {
+        bindProps(input, { defaultValue: "3" })
+      },
+    })
+
+    input.value = ""
+    const event = new Event("input", { bubbles: true })
+    Object.defineProperty(event, "inputType", { value: "deleteContentBackward" })
+    input.dispatchEvent(event)
+    bindProps(input, { defaultValue: "3" })
+
+    expect(input.value).toBe("3")
+    expect(input.defaultValue).toBe("3")
+    cleanup()
+  })
+
+  test("hydrates missing inputType on input events from the previous beforeinput event", () => {
+    const input = document.createElement("input")
+    const inputTypes: Array<string | undefined> = []
+    const cleanup = bindProps(input, {
+      defaultValue: "2",
+      onBeforeInput() {},
+      onInput(event: Event) {
+        inputTypes.push((event as { inputType?: string }).inputType)
+        bindProps(input, { defaultValue: "3" })
+      },
+    })
+
+    const beforeInput = new Event("beforeinput", { bubbles: true })
+    Object.defineProperty(beforeInput, "inputType", { value: "deleteByCut" })
+    input.dispatchEvent(beforeInput)
+
+    input.value = ""
+    input.dispatchEvent(new Event("input", { bubbles: true }))
+    bindProps(input, { defaultValue: "3" })
+
+    expect(inputTypes).toEqual(["deleteByCut"])
+    expect(input.value).toBe("3")
+    expect(input.defaultValue).toBe("3")
+    cleanup()
+  })
+
+  test("synthesizes a deleteByCut input event when cut changes a value without a native input event", async () => {
+    const input = document.createElement("input")
+    document.body.appendChild(input)
+    input.value = "2"
+    const inputTypes: Array<string | undefined> = []
+    const cleanup = bindProps(input, {
+      defaultValue: "2",
+      onInput(event: Event) {
+        inputTypes.push((event as { inputType?: string }).inputType)
+      },
+    })
+
+    input.addEventListener("cut", () => {
+      input.value = ""
+    })
+
+    input.dispatchEvent(new Event("cut", { bubbles: true }))
+    await new Promise((resolve) => setTimeout(resolve))
+
+    expect(inputTypes).toEqual(["deleteByCut"])
+    cleanup()
+    input.remove()
+  })
+
+  test("does not synthesize a cut input event when the browser already emitted input", async () => {
+    const input = document.createElement("input")
+    document.body.appendChild(input)
+    input.value = "2"
+    const inputTypes: Array<string | undefined> = []
+    const cleanup = bindProps(input, {
+      defaultValue: "2",
+      onInput(event: Event) {
+        inputTypes.push((event as { inputType?: string }).inputType)
+      },
+    })
+
+    input.addEventListener("cut", () => {
+      input.value = ""
+      input.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "deleteByCut" }))
+    })
+
+    input.dispatchEvent(new Event("cut", { bubbles: true }))
+    await new Promise((resolve) => setTimeout(resolve))
+
+    expect(inputTypes).toEqual(["deleteByCut"])
+    cleanup()
+    input.remove()
+  })
+
+  test("synthesizes a deleteByCut input event when keyboard cut does not mutate the input", async () => {
+    const input = document.createElement("input")
+    document.body.appendChild(input)
+    input.value = "123"
+    input.setSelectionRange(1, 2)
+    const inputTypes: Array<string | undefined> = []
+    const cleanup = bindProps(input, {
+      defaultValue: "123",
+      onInput(event: Event) {
+        inputTypes.push((event as { inputType?: string }).inputType)
+      },
+      onKeyDown() {},
+    })
+
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, ctrlKey: true, key: "x" }))
+    await new Promise((resolve) => setTimeout(resolve))
+
+    expect(input.value).toBe("13")
+    expect(inputTypes).toEqual(["deleteByCut"])
+    cleanup()
+    input.remove()
+  })
+
+  test("does not synthesize keyboard cut input when the browser already emitted input", async () => {
+    const input = document.createElement("input")
+    document.body.appendChild(input)
+    input.value = "123"
+    input.setSelectionRange(1, 2)
+    const inputTypes: Array<string | undefined> = []
+    const cleanup = bindProps(input, {
+      defaultValue: "123",
+      onInput(event: Event) {
+        inputTypes.push((event as { inputType?: string }).inputType)
+      },
+      onKeyDown() {
+        input.value = "13"
+        input.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "deleteByCut" }))
+      },
+    })
+
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, ctrlKey: true, key: "x" }))
+    await new Promise((resolve) => setTimeout(resolve))
+
+    expect(input.value).toBe("13")
+    expect(inputTypes).toEqual(["deleteByCut"])
+    cleanup()
+    input.remove()
+  })
+
   test("clears stale active input preservation after non-insertion input events", () => {
     const input = document.createElement("input")
     const cleanup = bindProps(input, {
