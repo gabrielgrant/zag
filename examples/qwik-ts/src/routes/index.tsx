@@ -16,6 +16,9 @@ export default component$(() => {
           <Link href="/avatar">Avatar</Link>
         </li>
         <li>
+          <Link href="/cascade-select">Cascade Select</Link>
+        </li>
+        <li>
           <Link href="/clipboard">Clipboard</Link>
         </li>
         <li>

@@ -1,5 +1,5 @@
 import { expect, type Page } from "@playwright/test"
-import { a11y, clickControls, clickOutside, clickViz, controls, repeat, retry } from "../_utils"
+import { a11y, clickControls, clickOutside, clickViz, controls, repeat, retry, waitForZagQwikSettled } from "../_utils"
 
 export class Model {
   private readonly consoleMessages: string[] = []
@@ -18,40 +18,48 @@ export class Model {
     return controls(this.page)
   }
 
-  clickViz() {
-    return clickViz(this.page)
+  async clickViz() {
+    await clickViz(this.page)
+    await waitForZagQwikSettled(this.page)
   }
 
-  clickControls() {
-    return clickControls(this.page)
+  async clickControls() {
+    await clickControls(this.page)
+    await waitForZagQwikSettled(this.page)
   }
 
-  clickOutside() {
-    return clickOutside(this.page)
+  async clickOutside() {
+    await clickOutside(this.page)
+    await waitForZagQwikSettled(this.page)
   }
 
   checkAccessibility(selector?: string) {
     return a11y(this.page, selector)
   }
 
-  pressKey(key: string, times = 1) {
-    return repeat(times, () => this.page.keyboard.press(key))
+  async pressKey(key: string, times = 1) {
+    await repeat(times, () => this.page.keyboard.press(key))
+    await waitForZagQwikSettled(this.page)
   }
 
-  pressKeyDown(key: string, times = 1) {
-    return repeat(times, () => this.page.keyboard.down("ArrowDown"))
+  async pressKeyDown(key: string, times = 1) {
+    await repeat(times, () => this.page.keyboard.down("ArrowDown"))
+    await waitForZagQwikSettled(this.page)
   }
 
-  pressKeyUp(key: string, times = 1) {
-    return repeat(times, () => this.page.keyboard.up("ArrowUp"))
+  async pressKeyUp(key: string, times = 1) {
+    await repeat(times, () => this.page.keyboard.up("ArrowUp"))
+    await waitForZagQwikSettled(this.page)
   }
 
-  rightClick(selector: string) {
-    return this.page.locator(selector).click({ button: "right" })
+  async rightClick(selector: string) {
+    await this.page.locator(selector).click({ button: "right" })
+    await waitForZagQwikSettled(this.page)
   }
 
-  type(value: string) {
-    return this.page.keyboard.type(value)
+  async type(value: string) {
+    await this.page.keyboard.type(value)
+    await waitForZagQwikSettled(this.page)
   }
 
   seeCaretAt = async (position: number) => {
@@ -126,8 +134,9 @@ export class Model {
     await this.page.mouse.up()
   }
 
-  click(text: string) {
-    return this.page.getByText(text).click()
+  async click(text: string) {
+    await this.page.getByText(text).click()
+    await waitForZagQwikSettled(this.page)
   }
 
   see(text: string, context?: string) {

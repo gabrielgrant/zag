@@ -8,6 +8,7 @@ export interface SplitProps {
 interface Binding {
   cleanup: VoidFunction
   eventBindings: Map<string, { listener: EventListener; wrapped: EventListener }>
+  onEvent: VoidFunction | undefined
   stopPreservingStyleVariables: VoidFunction
   version: number
 }
@@ -173,6 +174,14 @@ function replayMissedInitialInput(node: Element, eventProps: Record<string, Even
   node.dispatchEvent(new Event("input", { bubbles: true }))
 }
 
+function notifyBindingEvent(binding: Binding) {
+  binding.onEvent?.()
+  queueMicrotask(() => {
+    binding.onEvent?.()
+    requestAnimationFrame(() => binding.onEvent?.())
+  })
+}
+
 function getAttributeName(key: string) {
   if (key === "className") return "class"
   if (key === "htmlFor") return "for"
@@ -253,6 +262,11 @@ function removeStaticProp(node: Element, key: string) {
 function setStaticProp(node: Element, key: string, value: unknown) {
   const attribute = getAttributeName(key)
   const remove = value == null || (value === false && !key.startsWith("aria-") && !key.startsWith("data-"))
+
+  if (key === "textContent") {
+    node.textContent = value == null ? "" : String(value)
+    return
+  }
 
   if (key === "style") {
     setStyleProps(node, value)
@@ -356,13 +370,16 @@ export function splitProps(props: ZagProps): SplitProps {
   return { eventProps, staticProps }
 }
 
-export function bindProps(node: Element, props: ZagProps): VoidFunction {
+export function bindProps(node: Element, props: ZagProps, onEvent?: VoidFunction): VoidFunction {
+  Object.defineProperty(node, "__zagQwikBound", { configurable: true, value: true })
+
   let binding = bindings.get(node)
   if (!binding) {
     const eventBindings: Binding["eventBindings"] = new Map()
     const stopPreservingStyleVariables = preserveStyleVariables(node)
     binding = {
       eventBindings,
+      onEvent: undefined,
       stopPreservingStyleVariables,
       version: 0,
       cleanup() {
@@ -371,6 +388,7 @@ export function bindProps(node: Element, props: ZagProps): VoidFunction {
           node.removeEventListener(event, wrapped)
         })
         eventBindings.clear()
+        delete (node as any).__zagQwikBound
         if (bindings.get(node) === activeBinding) bindings.delete(node)
       },
     }
@@ -379,6 +397,7 @@ export function bindProps(node: Element, props: ZagProps): VoidFunction {
   const activeBinding = binding
 
   activeBinding.version += 1
+  activeBinding.onEvent = onEvent
   const version = activeBinding.version
 
   syncStaticProps(node, props)
@@ -418,6 +437,7 @@ export function bindProps(node: Element, props: ZagProps): VoidFunction {
           }
           currentEventType = previousEventType
           currentInputType = previousInputType
+          notifyBindingEvent(activeBinding)
         }
       },
     }
@@ -429,7 +449,11 @@ export function bindProps(node: Element, props: ZagProps): VoidFunction {
     const entry = {
       listener: synthesizeCutInputEvent as EventListener,
       wrapped(eventObject: Event) {
-        entry.listener(eventObject)
+        try {
+          entry.listener(eventObject)
+        } finally {
+          notifyBindingEvent(activeBinding)
+        }
       },
     }
     activeBinding.eventBindings.set("cut", entry)

@@ -15,15 +15,42 @@ import { bindProps, splitProps, type ZagProps } from "./bind-props"
 
 export class QwikMachine<T extends MachineSchema> extends VanillaMachine<T> {
   private frame = 0
-  private bindings = new Map<Element, { cleanup?: VoidFunction; getProps: () => ZagProps }>()
+  private refreshFrame = 0
+  private commit: VoidFunction | undefined
+  private pendingCommit: VoidFunction | undefined
+  private renderCallbacks = new Set<VoidFunction>()
+  private bindings = new Map<Element, { cleanup?: VoidFunction; getProps: () => ZagProps; onEvent?: VoidFunction }>()
+
+  setCommit(commit: VoidFunction | undefined) {
+    this.commit = commit
+  }
+
+  requestCommit() {
+    if (this.commit) this.scheduleCommit(this.commit)
+  }
 
   scheduleCommit(commit: VoidFunction) {
     this.refreshBindings()
-    if (this.frame) return
+    this.pendingCommit = commit
+    this.flushCommit()
+  }
+
+  private flushCommit() {
+    if (this.refreshFrame) {
+      cancelAnimationFrame(this.refreshFrame)
+      this.refreshFrame = 0
+    }
+    if (this.frame) {
+      return
+    }
     this.frame = requestAnimationFrame(() => {
-      commit()
-      this.frame = requestAnimationFrame(() => {
-        this.frame = 0
+      const nextCommit = this.pendingCommit
+      this.pendingCommit = undefined
+      this.frame = 0
+      nextCommit?.()
+      this.renderCallbacks.forEach((callback) => callback())
+      this.refreshFrame = requestAnimationFrame(() => {
+        this.refreshFrame = 0
         this.refreshBindings()
       })
     })
@@ -31,7 +58,10 @@ export class QwikMachine<T extends MachineSchema> extends VanillaMachine<T> {
 
   cancelCommit() {
     cancelAnimationFrame(this.frame)
+    cancelAnimationFrame(this.refreshFrame)
     this.frame = 0
+    this.refreshFrame = 0
+    this.pendingCommit = undefined
   }
 
   refreshBindings() {
@@ -42,13 +72,24 @@ export class QwikMachine<T extends MachineSchema> extends VanillaMachine<T> {
         return
       }
 
-      binding.cleanup = bindProps(node, binding.getProps())
+      binding.cleanup = bindProps(node, binding.getProps(), binding.onEvent ?? (() => this.requestCommit()))
     })
   }
 
-  bind(node: Element, props: ZagProps | (() => ZagProps)) {
+  addRenderCallback(callback: VoidFunction) {
+    this.renderCallbacks.add(callback)
+    return () => {
+      this.renderCallbacks.delete(callback)
+    }
+  }
+
+  bind(node: Element, props: ZagProps | (() => ZagProps), onEvent?: VoidFunction) {
     const getProps = typeof props === "function" ? props : () => props
-    const binding = { getProps, cleanup: bindProps(node, getProps()) }
+    const binding = {
+      getProps,
+      cleanup: bindProps(node, getProps(), onEvent ?? (() => this.requestCommit())),
+      ...(onEvent && { onEvent }),
+    }
     this.bindings.set(node, binding)
 
     return () => {
@@ -93,14 +134,17 @@ export function useMachineQrl<T extends MachineSchema>(
     ({ cleanup }) => {
       const runtime = controller.value
       runtime.start()
+      const commit = () => {
+        revision.value += 1
+      }
+      runtime.setCommit(commit)
       const unsubscribe = runtime.subscribe(() => {
-        runtime.scheduleCommit(() => {
-          revision.value += 1
-        })
+        runtime.scheduleCommit(commit)
       })
 
       cleanup(() => {
         unsubscribe()
+        runtime.setCommit(undefined)
         runtime.cancelCommit()
         runtime.stop()
       })
@@ -156,6 +200,14 @@ function callQrlRender<Args extends unknown[], Result>(
   return
 }
 
+function snapshotApiValue<T>(value: T): T {
+  if (Array.isArray(value)) return [...value] as T
+  if (value && typeof value === "object" && Object.getPrototypeOf(value) === Object.prototype) {
+    return { ...value }
+  }
+  return value
+}
+
 export function usePartQrl<T extends MachineSchema>(
   getProps: QRL<() => ZagProps>,
   machine: QwikMachineSignal<T>,
@@ -206,10 +258,39 @@ export function useConnectedPartsQrl<T extends MachineSchema, A extends object>(
   )
 
   return {
-    api: api.value as A,
+    get api() {
+      return api.value as A
+    },
     getApi,
     machine,
   }
+}
+
+export function useApiQrl<T extends MachineSchema, A extends object, R>(
+  getValue: QRL<(api: A) => R>,
+  parts: ConnectedParts<T, A>,
+): Signal<R | undefined> {
+  parts.machine.revision.value
+  const value = useSignal<R>()
+  const initialValue = parts.api ? callQrlRender(getValue, parts.api) : undefined
+  if (initialValue !== undefined) {
+    value.value = snapshotApiValue(initialValue)
+  }
+
+  useVisibleTask$(
+    async ({ track, cleanup }) => {
+      track(() => parts.machine.revision.value)
+      const [resolvedGetApi, resolvedGetValue] = await Promise.all([parts.getApi.resolve(), getValue.resolve()])
+      const updateValue = () => {
+        value.value = snapshotApiValue(resolvedGetValue(resolvedGetApi()))
+      }
+      updateValue()
+      cleanup(parts.machine.controller.value.addRenderCallback(updateValue))
+    },
+    { strategy: "document-ready" },
+  )
+
+  return value
 }
 
 export function bindPartQrl<T extends MachineSchema, A extends object>(
@@ -242,5 +323,6 @@ export function bindPartQrl<T extends MachineSchema, A extends object>(
 }
 
 export const useConnectedParts$ = implicit$FirstArg(useConnectedPartsQrl)
+export const useApi$ = implicit$FirstArg(useApiQrl)
 export const bindPart$ = implicit$FirstArg(bindPartQrl)
 export const usePart$ = implicit$FirstArg(usePartQrl)

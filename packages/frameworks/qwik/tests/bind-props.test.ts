@@ -27,6 +27,7 @@ describe("bindProps", () => {
     expect(content.tabIndex).toBe(-1)
     expect(content.getAttribute("aria-hidden")).toBe("true")
     expect(content.getAttribute("data-state")).toBe("closed")
+    expect((content as any).__zagQwikBound).toBe(true)
 
     bindProps(content, {
       role: "menu",

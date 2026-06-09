@@ -5,13 +5,65 @@ export async function waitForZagQwikSettled(page: Page) {
   if (process.env.FRAMEWORK !== "qwik") return
 
   await page.waitForLoadState("domcontentloaded")
+  await page.waitForLoadState("networkidle", { timeout: 1000 }).catch(() => {})
+  await page
+    .waitForFunction(
+      () => {
+        const parts = Array.from(document.querySelectorAll("[data-scope][data-part]"))
+        const visibleParts = parts.filter((part) => part.getClientRects().length > 0)
+        return visibleParts.every((part) => (part as any).__zagQwikBound)
+      },
+      undefined,
+      { timeout: 1000 },
+    )
+    .catch(() => {})
   await page.evaluate(
     () =>
       new Promise<void>((resolve) => {
-        const idle = window.requestIdleCallback ?? ((callback: IdleRequestCallback) => window.setTimeout(callback, 0))
+        const startedAt = performance.now()
+        let previousSignature = ""
+        let stableFrames = 0
+
+        const getSignature = () =>
+          Array.from(document.querySelectorAll("[data-scope][data-part]"))
+            .map((part) =>
+              [
+                part.tagName,
+                part.id,
+                part.getAttribute("data-scope"),
+                part.getAttribute("data-part"),
+                part.getAttribute("data-state"),
+                part.getAttribute("data-highlighted"),
+                part.getAttribute("data-value"),
+                part.getAttribute("aria-expanded"),
+                part.getAttribute("hidden"),
+                part.textContent,
+              ].join("\u0000"),
+            )
+            .join("\u0001")
+
+        const check = () => {
+          const signature = getSignature()
+          stableFrames = signature === previousSignature ? stableFrames + 1 : 0
+          previousSignature = signature
+
+          if (stableFrames >= 2 || performance.now() - startedAt > 1000) {
+            resolve()
+            return
+          }
+
+          requestAnimationFrame(check)
+        }
+
+        requestAnimationFrame(check)
+      }),
+  )
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
-            idle(() => resolve())
+            setTimeout(resolve, 100)
           })
         })
       }),
@@ -45,19 +97,23 @@ export const controls = (page: Page) => {
       await page.keyboard.press("Backspace")
       await el.fill(value)
       await page.keyboard.press("Enter")
+      await waitForZagQwikSettled(page)
     },
     bool: async (id: string, value = true) => {
       const el = page.locator(testid(id))
       if (value) await el.check()
       else await el.uncheck()
+      await waitForZagQwikSettled(page)
     },
     select: async (id: string, value: string) => {
       const el = page.locator(testid(id))
       await el.selectOption(value)
+      await waitForZagQwikSettled(page)
     },
     date: async (id: string, value: string) => {
       const el = page.locator(testid(id))
       await el.fill(value)
+      await waitForZagQwikSettled(page)
     },
   }
 }

@@ -19,6 +19,9 @@ export default component$(() => {
         <Link data-active={pathnameComponent === "avatar" ? "" : undefined} href="/avatar">
           Avatar
         </Link>
+        <Link data-active={pathnameComponent === "cascade-select" ? "" : undefined} href="/cascade-select">
+          Cascade Select
+        </Link>
         <Link data-active={pathnameComponent === "checkbox" ? "" : undefined} href="/checkbox">
           Checkbox
         </Link>
