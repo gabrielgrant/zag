@@ -1,0 +1,43 @@
+import { component$, useId } from "@qwik.dev/core"
+import * as popover from "@zag-js/popover"
+import { normalizeProps, useMachine } from "@zag-js/qwik"
+
+export default component$(() => {
+  const id = useId()
+  const service = useMachine(popover.machine, {
+    id,
+    modal: true,
+  })
+
+  const api = popover.connect(service, normalizeProps)
+
+  return (
+    <main class="popover">
+      <div data-part="root">
+        <button data-testid="button-before">Button :before</button>
+
+        <button data-testid="popover-trigger" {...api.getTriggerProps()}>
+          Sort by
+        </button>
+
+        <div {...api.getPositionerProps()}>
+          <div data-testid="popover-content" class="popover-content" {...api.getContentProps()}>
+            <fieldset style={{ border: "none", padding: "0" }}>
+              <label>
+                <input data-testid="radio-name-asc" type="radio" name="sort" value="name-asc" checked /> Name (A to Z)
+              </label>
+              <label>
+                <input data-testid="radio-name-desc" type="radio" name="sort" value="name-desc" /> Name (Z to A)
+              </label>
+              <label>
+                <input data-testid="radio-hours" type="radio" name="sort" value="hours" /> Hours
+              </label>
+            </fieldset>
+          </div>
+        </div>
+
+        <button data-testid="button-after">Button :after</button>
+      </div>
+    </main>
+  )
+})
