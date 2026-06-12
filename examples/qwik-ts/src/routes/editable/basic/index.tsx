@@ -10,11 +10,15 @@ export default component$(() => {
   const controls = useControls(editableControls)
   const id = useId()
 
-  const service = useMachine(editable.machine, {
-    ...controls.state,
-    id,
-    defaultValue: "Hello World",
-  } as editable.Props)
+  const service = useMachine(
+    editable.machine,
+    () =>
+      ({
+        id,
+        defaultValue: "Hello World",
+        ...controls.values(),
+      }) as editable.Props,
+  )
 
   const api = editable.connect(service, normalizeProps)
 
@@ -46,7 +50,7 @@ export default component$(() => {
         </div>
       </main>
 
-      <Toolbar controls={controls}>
+      <Toolbar controls={controls.ref}>
         <StateVisualizer state={service} />
       </Toolbar>
     </>

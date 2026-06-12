@@ -10,10 +10,14 @@ export default component$(() => {
   const controls = useControls(numberInputControls)
   const id = useId()
 
-  const service = useMachine(numberInput.machine, {
-    ...controls.state,
-    id,
-  } as numberInput.Props)
+  const service = useMachine(
+    numberInput.machine,
+    () =>
+      ({
+        id,
+        ...controls.values(),
+      }) as numberInput.Props,
+  )
 
   const api = numberInput.connect(service, normalizeProps)
 
@@ -36,7 +40,7 @@ export default component$(() => {
           </div>
         </div>
       </main>
-      <Toolbar controls={controls}>
+      <Toolbar controls={controls.ref}>
         <StateVisualizer state={service} omit={["formatter", "parser"]} />
       </Toolbar>
     </>

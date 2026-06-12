@@ -10,11 +10,15 @@ export default component$(() => {
   const controls = useControls(clipboardControls)
   const id = useId()
 
-  const service = useMachine(clipboard.machine, {
-    ...controls.state,
-    id,
-    value: "https://github.com/chakra-ui/zag",
-  } as clipboard.Props)
+  const service = useMachine(
+    clipboard.machine,
+    () =>
+      ({
+        id,
+        value: "https://github.com/chakra-ui/zag",
+        ...controls.values(),
+      }) as clipboard.Props,
+  )
 
   const api = clipboard.connect(service, normalizeProps)
 
@@ -32,7 +36,7 @@ export default component$(() => {
         </div>
       </main>
 
-      <Toolbar controls={controls}>
+      <Toolbar controls={controls.ref}>
         <StateVisualizer state={service} />
       </Toolbar>
     </>

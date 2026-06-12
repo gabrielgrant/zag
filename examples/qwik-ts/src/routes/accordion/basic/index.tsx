@@ -10,10 +10,14 @@ export default component$(() => {
   const controls = useControls(accordionControls)
   const id = useId()
 
-  const service = useMachine(accordion.machine, {
-    ...controls.state,
-    id,
-  } as accordion.Props)
+  const service = useMachine(
+    accordion.machine,
+    () =>
+      ({
+        id,
+        ...controls.values(),
+      }) as accordion.Props,
+  )
 
   const api = accordion.connect(service, normalizeProps)
 
@@ -38,7 +42,7 @@ export default component$(() => {
         </div>
       </main>
 
-      <Toolbar controls={controls}>
+      <Toolbar controls={controls.ref}>
         <StateVisualizer state={service} />
       </Toolbar>
     </>

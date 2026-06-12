@@ -10,10 +10,14 @@ export default component$(() => {
   const controls = useControls(angleSliderControls)
   const id = useId()
 
-  const service = useMachine(angleSlider.machine, {
-    ...controls.state,
-    id,
-  } as angleSlider.Props)
+  const service = useMachine(
+    angleSlider.machine,
+    () =>
+      ({
+        id,
+        ...controls.values(),
+      }) as angleSlider.Props,
+  )
 
   const api = angleSlider.connect(service, normalizeProps)
 
@@ -36,7 +40,7 @@ export default component$(() => {
         </div>
       </main>
 
-      <Toolbar controls={controls}>
+      <Toolbar controls={controls.ref}>
         <StateVisualizer state={service} />
       </Toolbar>
     </>
