@@ -13,8 +13,17 @@ import type {
   Params,
   Service,
 } from "@zag-js/core"
-import { createScope, INIT_STATE, MachineStatus } from "@zag-js/core"
-import { compact, ensure, isEqual, isFunction, isString, toArray, warn } from "@zag-js/utils"
+import {
+  createScope,
+  findTransition,
+  getExitEnterStates,
+  hasTag,
+  INIT_STATE,
+  MachineStatus,
+  matchesState,
+  resolveStateValue,
+} from "@zag-js/core"
+import { callAll, compact, ensure, isEqual, isFunction, isString, toArray, warn } from "@zag-js/utils"
 import { $, type NoSerialize, noSerialize, untrack, useSignal, useVisibleTask$ } from "@qwik.dev/core"
 import { isServer } from "@qwik.dev/core/build"
 import { useBindable } from "./bindable"
@@ -166,9 +175,9 @@ export function useMachine<T extends MachineSchema>(
 
   const { id, ids, getRootNode } = access(userProps) as any
   const scope = createScope({ id, ids, getRootNode })
-  const props: any = machine.props?.({ props: compact(access(userProps)), scope }) ?? access(userProps)
+  const computeProps = () => machine.props?.({ props: compact(access(userProps)), scope }) ?? access(userProps)
 
-  self.propsRef.current = props
+  self.propsRef.current = computeProps()
   self.scopeRef.current = scope
 
   const prop = ((key: any) => self.propsRef.current[key]) as Params<T>["prop"]
@@ -202,11 +211,10 @@ export function useMachine<T extends MachineSchema>(
   const getState = () => ({
     ...state,
     matches(...values: T["state"][]) {
-      return values.includes(state.get())
+      return values.some((value) => matchesState(state.get() as string, value as string))
     },
     hasTag(tag: T["tag"]) {
-      const currentState = state.get()
-      return !!machine.states[currentState as T["state"]]?.tags?.includes(tag)
+      return hasTag(machine, state.get(), tag)
     },
   })
 
@@ -361,38 +369,51 @@ export function useMachine<T extends MachineSchema>(
   }
 
   const state = useBindable(() => ({
-    defaultValue: machine.initialState({ prop }),
+    defaultValue: resolveStateValue(machine, machine.initialState({ prop })),
     onChange(nextState, prevState) {
-      // compute effects: exit -> transition -> enter
+      const { exiting, entering } = getExitEnterStates(
+        machine,
+        prevState,
+        nextState,
+        self.transitionRef.current?.reenter,
+      )
 
-      // exit effects
-      if (prevState) {
-        const exitEffects = self.effects.get(prevState)
+      exiting.forEach((item) => {
+        const exitEffects = self.effects.get(item.path)
         exitEffects?.()
-        self.effects.delete(prevState)
-      }
+        self.effects.delete(item.path)
+      })
 
-      // exit actions
-      if (prevState) {
-        action(machine.states[prevState]?.exit)
-      }
+      exiting.forEach((item) => {
+        action(item.state?.exit)
+      })
 
       // transition actions
       action(self.transitionRef.current?.actions)
 
-      // enter effect
-      const cleanup = effect(machine.states[nextState]?.effects)
-      if (cleanup) self.effects.set(nextState as string, cleanup)
+      entering.forEach((item) => {
+        const cleanup = effect(item.state?.effects)
+        if (cleanup) {
+          // compose with any existing cleanup so re-entry of the same path
+          // does not clobber a pending one
+          const existing = self.effects.get(item.path)
+          self.effects.set(item.path, existing ? callAll(existing, cleanup) : cleanup)
+        }
+      })
 
       // root entry actions
       if (prevState === INIT_STATE) {
         action(machine.entry)
         const cleanup = effect(machine.effects)
-        if (cleanup) self.effects.set(INIT_STATE, cleanup)
+        if (cleanup) {
+          const existing = self.effects.get(INIT_STATE)
+          self.effects.set(INIT_STATE, existing ? callAll(existing, cleanup) : cleanup)
+        }
       }
 
-      // enter actions
-      action(machine.states[nextState]?.entry)
+      entering.forEach((item) => {
+        action(item.state?.entry)
+      })
     },
   }))
 
@@ -403,36 +424,46 @@ export function useMachine<T extends MachineSchema>(
       if (self.pendingEvents.length < 64) self.pendingEvents.push(event)
       return
     }
-    if (self.status !== MachineStatus.Started) return
 
-    self.previousEventRef.current = self.eventRef.current
-    self.eventRef.current = event
+    // Defer processing one microtask (mirrors the React adapter). This keeps
+    // re-entrant sends well-ordered: an action that moves DOM focus fires a
+    // synchronous focusin whose send() must queue BEHIND the current action
+    // sequence — processed inline it would overwrite the event mid-sequence
+    // and later actions would read the wrong `event.id`.
+    queueMicrotask(() => {
+      if (self.status !== MachineStatus.Started) return
 
-    const currentState = state.get()
+      // re-resolve props at the event boundary: Qwik commits renders on its
+      // own scheduler, so an event can arrive before the render that follows
+      // a userProps change (e.g. a controls-store update). When userProps is
+      // a function, this reads the live values instead of the last render's
+      // snapshot.
+      self.propsRef.current = computeProps()
 
-    const transitions =
-      // @ts-ignore
-      machine.states[currentState].on?.[event.type] ??
-      // @ts-ignore
-      machine.on?.[event.type]
+      self.previousEventRef.current = self.eventRef.current
+      self.eventRef.current = event
 
-    const transition = choose(transitions)
-    if (!transition) return
+      const currentState = state.get()
 
-    // save current transition
-    self.transitionRef.current = transition
-    const target = transition.target ?? currentState
+      const { transitions, source } = findTransition(machine, currentState, event.type as string)
+      const transition = choose(transitions)
+      if (!transition) return
 
-    debug("transition", event.type, transition.target || currentState, `(${transition.actions})`)
+      // save current transition
+      self.transitionRef.current = transition
+      const target = resolveStateValue(machine, transition.target ?? currentState, source)
 
-    const changed = target !== currentState
-    if (changed) {
-      state.set(target)
-    } else if (transition.reenter && !changed) {
-      state.invoke(currentState, currentState)
-    } else {
-      action(transition.actions)
-    }
+      debug("transition", event.type, transition.target || currentState, `(${transition.actions})`)
+
+      const changed = target !== currentState
+      if (changed) {
+        state.set(target)
+      } else if (transition.reenter) {
+        state.invoke(currentState, currentState)
+      } else {
+        action(transition.actions ?? [])
+      }
+    })
   }
 
   // refresh lifecycle closures so they capture this render's bindables/params
