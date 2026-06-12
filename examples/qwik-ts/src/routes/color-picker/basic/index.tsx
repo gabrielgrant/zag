@@ -20,7 +20,7 @@ export default component$(() => {
       ({
         id,
         name: "color",
-        format: "hsla",
+        // format comes from the controls panel
         defaultValue: colorPicker.parse("hsl(0, 100%, 50%)"),
         ...controls.values(),
       }) as colorPicker.Props,

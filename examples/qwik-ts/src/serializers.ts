@@ -7,6 +7,8 @@ import {
   parseDateTime,
 } from "@internationalized/date"
 import { registerValueSerializer } from "@zag-js/qwik"
+import { createCalendar } from "@internationalized/date"
+import { IncompleteDate } from "@zag-js/date-input"
 import { parse as parseColor, type Color } from "@zag-js/color-picker"
 
 /**
@@ -35,6 +37,32 @@ registerValueSerializer({
   match: (v): v is ZonedDateTime => v instanceof ZonedDateTime,
   encode: (v) => ({ iso: v.toAbsoluteString(), tz: v.timeZone }),
   decode: (d: any) => parseAbsolute(d.iso, d.tz),
+})
+
+registerValueSerializer({
+  id: "incomplete-date",
+  match: (v): v is IncompleteDate => v instanceof IncompleteDate,
+  encode: (v) => ({
+    cal: v.calendar.identifier,
+    hc: v.hourCycle,
+    f: [v.era, v.year, v.month, v.day, v.hour, v.dayPeriod, v.minute, v.second, v.millisecond, v.offset],
+  }),
+  decode: (d: any) => {
+    const out = new IncompleteDate(createCalendar(d.cal), d.hc)
+    ;[
+      out.era,
+      out.year,
+      out.month,
+      out.day,
+      out.hour,
+      out.dayPeriod,
+      out.minute,
+      out.second,
+      out.millisecond,
+      out.offset,
+    ] = d.f
+    return out
+  },
 })
 
 registerValueSerializer({
