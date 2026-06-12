@@ -47,6 +47,15 @@ test.describe("menu", () => {
     await I.dontSeeHighlightedItem()
   })
 
+  test("on hover, menu keeps its position", async () => {
+    await I.clickTrigger()
+    await I.seeMenuIsPositioned()
+    const rect = await I.getPositionerRect()
+    await I.hoverItem("Duplicate")
+    await I.seeItemIsHighlighted("Duplicate")
+    expect(await I.getPositionerRect()).toEqual(rect)
+  })
+
   test("with keyboard, can select item", async () => {
     await I.clickTrigger()
     await I.seeDropdown()
