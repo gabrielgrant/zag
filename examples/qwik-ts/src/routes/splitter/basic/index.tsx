@@ -10,11 +10,15 @@ export default component$(() => {
   const controls = useControls(splitterControls)
   const id = useId()
 
-  const service = useMachine(splitter.machine, {
-    ...controls.state,
-    id,
-    panels: [{ id: "a" }, { id: "b" }, { id: "c" }],
-  } as splitter.Props)
+  const service = useMachine(
+    splitter.machine,
+    () =>
+      ({
+        id,
+        panels: [{ id: "a" }, { id: "b" }, { id: "c" }],
+        ...controls.values(),
+      }) as splitter.Props,
+  )
 
   const api = splitter.connect(service, normalizeProps)
 
@@ -37,7 +41,7 @@ export default component$(() => {
         </div>
       </main>
 
-      <Toolbar controls={controls}>
+      <Toolbar controls={controls.ref}>
         <StateVisualizer state={service} />
       </Toolbar>
     </>

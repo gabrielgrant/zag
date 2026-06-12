@@ -10,10 +10,14 @@ export default component$(() => {
   const controls = useControls(hoverCardControls)
   const id = useId()
 
-  const service = useMachine(hoverCard.machine, {
-    ...controls.state,
-    id,
-  } as hoverCard.Props)
+  const service = useMachine(
+    hoverCard.machine,
+    () =>
+      ({
+        id,
+        ...controls.values(),
+      }) as hoverCard.Props,
+  )
 
   const api = hoverCard.connect(service, normalizeProps)
 
@@ -43,7 +47,7 @@ export default component$(() => {
         </div>
       </main>
 
-      <Toolbar controls={controls}>
+      <Toolbar controls={controls.ref}>
         <StateVisualizer state={service} />
       </Toolbar>
     </>

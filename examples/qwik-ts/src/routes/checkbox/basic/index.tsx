@@ -10,11 +10,14 @@ export default component$(() => {
   const controls = useControls(checkboxControls)
   const id = useId()
 
-  const service = useMachine(checkbox.machine, {
-    ...controls.state,
-    id,
-    name: "checkbox",
-  } as checkbox.Props)
+  const service = useMachine(
+    checkbox.machine,
+    () =>
+      ({
+        id,
+        ...controls.values(),
+      }) as checkbox.Props,
+  )
 
   const api = checkbox.connect(service, normalizeProps)
 
@@ -37,7 +40,7 @@ export default component$(() => {
         </form>
       </main>
 
-      <Toolbar controls={controls}>
+      <Toolbar controls={controls.ref}>
         <StateVisualizer state={service} />
       </Toolbar>
     </>

@@ -10,11 +10,15 @@ export default component$(() => {
   const controls = useControls(paginationControls)
   const id = useId()
 
-  const service = useMachine(pagination.machine, {
-    ...controls.state,
-    id,
-    count: paginationData.length,
-  } as pagination.Props)
+  const service = useMachine(
+    pagination.machine,
+    () =>
+      ({
+        id,
+        count: paginationData.length,
+        ...controls.values(),
+      }) as pagination.Props,
+  )
 
   const api = pagination.connect(service, normalizeProps)
 
@@ -72,7 +76,7 @@ export default component$(() => {
         )}
       </main>
 
-      <Toolbar controls={controls}>
+      <Toolbar controls={controls.ref}>
         <StateVisualizer state={service} />
       </Toolbar>
     </>

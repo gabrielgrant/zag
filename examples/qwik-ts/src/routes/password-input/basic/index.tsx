@@ -10,10 +10,14 @@ export default component$(() => {
   const controls = useControls(passwordInputControls)
   const id = useId()
 
-  const service = useMachine(passwordInput.machine, {
-    ...controls.state,
-    id,
-  } as passwordInput.Props)
+  const service = useMachine(
+    passwordInput.machine,
+    () =>
+      ({
+        id,
+        ...controls.values(),
+      }) as passwordInput.Props,
+  )
 
   const api = passwordInput.connect(service, normalizeProps)
 
@@ -31,7 +35,7 @@ export default component$(() => {
         </div>
       </main>
 
-      <Toolbar controls={controls}>
+      <Toolbar controls={controls.ref}>
         <StateVisualizer state={service} />
       </Toolbar>
     </>

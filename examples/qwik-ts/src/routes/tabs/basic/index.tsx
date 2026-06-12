@@ -10,11 +10,15 @@ export default component$(() => {
   const controls = useControls(tabsControls)
   const id = useId()
 
-  const service = useMachine(tabs.machine, {
-    ...controls.state,
-    id,
-    defaultValue: "nils",
-  } as tabs.Props)
+  const service = useMachine(
+    tabs.machine,
+    () =>
+      ({
+        id,
+        defaultValue: "nils",
+        ...controls.values(),
+      }) as tabs.Props,
+  )
 
   const api = tabs.connect(service, normalizeProps)
 
@@ -38,7 +42,7 @@ export default component$(() => {
           ))}
         </div>
       </main>
-      <Toolbar controls={controls}>
+      <Toolbar controls={controls.ref}>
         <StateVisualizer state={service} />
       </Toolbar>
     </>

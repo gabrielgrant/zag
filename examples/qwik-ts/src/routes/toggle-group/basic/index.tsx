@@ -10,10 +10,14 @@ export default component$(() => {
   const controls = useControls(toggleGroupControls)
   const id = useId()
 
-  const service = useMachine(toggle.machine, {
-    ...controls.state,
-    id,
-  } as toggle.Props)
+  const service = useMachine(
+    toggle.machine,
+    () =>
+      ({
+        id,
+        ...controls.values(),
+      }) as toggle.Props,
+  )
 
   const api = toggle.connect(service, normalizeProps)
 
@@ -30,7 +34,7 @@ export default component$(() => {
         </div>
       </main>
 
-      <Toolbar controls={controls}>
+      <Toolbar controls={controls.ref}>
         <StateVisualizer state={service} />
       </Toolbar>
     </>

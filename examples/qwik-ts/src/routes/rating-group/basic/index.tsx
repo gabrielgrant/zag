@@ -36,11 +36,15 @@ export default component$(() => {
   const controls = useControls(ratingControls)
   const id = useId()
 
-  const service = useMachine(rating.machine, {
-    ...controls.state,
-    id,
-    defaultValue: 2.5,
-  } as rating.Props)
+  const service = useMachine(
+    rating.machine,
+    () =>
+      ({
+        id,
+        defaultValue: 2.5,
+        ...controls.values(),
+      }) as rating.Props,
+  )
 
   const api = rating.connect(service, normalizeProps)
 
@@ -65,7 +69,7 @@ export default component$(() => {
         </div>
       </main>
 
-      <Toolbar controls={controls}>
+      <Toolbar controls={controls.ref}>
         <StateVisualizer state={service} />
       </Toolbar>
     </>

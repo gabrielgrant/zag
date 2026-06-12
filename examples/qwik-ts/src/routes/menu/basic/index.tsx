@@ -10,10 +10,14 @@ export default component$(() => {
   const controls = useControls(menuControls)
   const id = useId()
 
-  const service = useMachine(menu.machine, {
-    ...controls.state,
-    id,
-  } as menu.Props)
+  const service = useMachine(
+    menu.machine,
+    () =>
+      ({
+        id,
+        ...controls.values(),
+      }) as menu.Props,
+  )
 
   const api = menu.connect(service, normalizeProps)
 
@@ -37,7 +41,7 @@ export default component$(() => {
         </div>
       </main>
 
-      <Toolbar controls={controls}>
+      <Toolbar controls={controls.ref}>
         <StateVisualizer state={service} />
       </Toolbar>
     </>

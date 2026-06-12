@@ -1,11 +1,11 @@
 import { component$, Slot, useSignal } from "@qwik.dev/core"
 import { dataAttr } from "@zag-js/dom-query"
-import type { UseControlsReturn } from "~/hooks/use-controls"
+import type { ControlsRef } from "~/hooks/use-controls"
 import { Controls } from "./controls"
 
 interface ToolbarProps {
-  // config + store only — both serializable across the component$ boundary
-  controls?: UseControlsReturn | null
+  // name + store only — both serializable across the component$ boundary
+  controls?: ControlsRef | null
   viz?: boolean
 }
 

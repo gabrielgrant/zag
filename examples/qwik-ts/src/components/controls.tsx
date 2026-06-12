@@ -1,13 +1,18 @@
+import * as allControls from "@zag-js/shared"
 import { deepGet, deepSet } from "@zag-js/shared"
-import type { UseControlsReturn } from "~/hooks/use-controls"
+import type { ControlsRef } from "~/hooks/use-controls"
 
 /**
  * Inline component (no `component$`): renders within the parent's context.
- * Event handlers below are extracted as QRLs by the optimizer and may only
- * capture serializable values — the controls store and string keys.
+ * Receives only the config's export name + the value store (both
+ * serializable); the config itself — which may contain functions — is looked
+ * up from @zag-js/shared at render time. Event handlers below are extracted
+ * as QRLs by the optimizer and may only capture serializable values — the
+ * store and string keys.
  */
-export const Controls = (props: { store: UseControlsReturn }) => {
-  const { config, state } = props.store
+export const Controls = (props: { store: ControlsRef }) => {
+  const { name, state } = props.store
+  const config = (allControls as any)[name] ?? {}
 
   return (
     <div class="controls-container">
@@ -88,6 +93,24 @@ export const Controls = (props: { store: UseControlsReturn }) => {
                       const val = parseFloat(el.value)
                       deepSet(state, key, isNaN(val) ? 0 : val)
                     }
+                  }}
+                />
+              </div>
+            )
+          case "date":
+            return (
+              <div key={key} class="text">
+                <label for={label} style={{ marginRight: "10px" }}>
+                  {label}
+                </label>
+                <input
+                  data-testid={key}
+                  id={label}
+                  type="date"
+                  placeholder={placeholder}
+                  value={value}
+                  onChange$={(_event, el) => {
+                    deepSet(state, key, el.value)
                   }}
                 />
               </div>

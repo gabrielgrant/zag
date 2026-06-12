@@ -10,11 +10,15 @@ export default component$(() => {
   const controls = useControls(switchControls)
   const id = useId()
 
-  const service = useMachine(zagSwitch.machine, {
-    ...controls.state,
-    id,
-    name: "switch",
-  } as zagSwitch.Props)
+  const service = useMachine(
+    zagSwitch.machine,
+    () =>
+      ({
+        id,
+        name: "switch",
+        ...controls.values(),
+      }) as zagSwitch.Props,
+  )
 
   const api = zagSwitch.connect(service, normalizeProps)
 
@@ -30,7 +34,7 @@ export default component$(() => {
         </label>
       </main>
 
-      <Toolbar controls={controls}>
+      <Toolbar controls={controls.ref}>
         <StateVisualizer state={service} />
       </Toolbar>
     </>

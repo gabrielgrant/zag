@@ -10,13 +10,17 @@ export default component$(() => {
   const controls = useControls(popoverControls)
   const id = useId()
 
-  const service = useMachine(popover.machine, {
-    ...controls.state,
-    id,
-    // content is rendered inline (Qwik has no portal); keep the machine's
-    // tab-order logic in agreement with the actual DOM position
-    portalled: false,
-  } as popover.Props)
+  const service = useMachine(
+    popover.machine,
+    () =>
+      ({
+        id,
+        ...controls.values(),
+        // after the spread: content renders inline (Qwik has no portal), so the
+        // machine's tab-order logic must agree with the actual DOM position
+        portalled: false,
+      }) as popover.Props,
+  )
 
   const api = popover.connect(service, normalizeProps)
 
@@ -58,7 +62,7 @@ export default component$(() => {
         </div>
       </main>
 
-      <Toolbar controls={controls}>
+      <Toolbar controls={controls.ref}>
         <StateVisualizer state={service} />
       </Toolbar>
     </>
