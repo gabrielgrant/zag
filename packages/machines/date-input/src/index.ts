@@ -34,3 +34,4 @@ export type {
   ValueChangeDetails,
   ZonedDateTime,
 } from "./date-input.types"
+export { IncompleteDate } from "./utils/incomplete-date"
