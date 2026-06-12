@@ -34,6 +34,46 @@ import { setWakeHandler } from "./wake-context"
 type AnyFunction = () => string | number | boolean | null | undefined
 
 /**
+ * Zag machines do post-render DOM work (focus management, element measurement,
+ * `checkRenderedElements`) inside `requestAnimationFrame`, assuming the
+ * framework has committed the current render by the next frame — which React
+ * guarantees via `flushSync`. Qwik commits on its own async scheduler, so a
+ * machine's rAF can fire ~1 frame before the DOM reflects the latest state
+ * (e.g. focusing dialog content while it still has `hidden`).
+ *
+ * Qwik does NOT use rAF to render (verified: rendering proceeds with rAF
+ * stubbed out), so it is safe to gate rAF callbacks behind the container's
+ * pending render. We patch the global once and defer a callback ONLY while a
+ * render is actually in flight (`$renderPromise$` set) — otherwise it runs
+ * inline, adding zero overhead to the common case.
+ */
+let rafGateInstalled = false
+function installRafRenderGate() {
+  if (rafGateInstalled || isServer) return
+  const g = globalThis as any
+  if (typeof g.requestAnimationFrame !== "function" || !g.document) return
+  rafGateInstalled = true
+
+  const orig = g.requestAnimationFrame.bind(g)
+  let container: any
+  const resolveContainer = () => {
+    if (container) return container
+    const el = g.document.querySelector("[q\\:container]")
+    if (el) container = getContainer(el)
+    return container
+  }
+
+  g.requestAnimationFrame = (cb: FrameRequestCallback): number =>
+    orig((time: number) => {
+      const c = resolveContainer()
+      if (!c) return cb(time)
+      // wait out any render in flight before running the machine's DOM work;
+      // resolves on the next microtask when nothing is pending
+      Promise.resolve(waitUntilRendered(c)).then(() => cb(time))
+    })
+}
+
+/**
  * Everything the machine needs that is NOT Qwik-serializable.
  *
  * Held in a `NoSerialize` signal: it persists across client re-renders, is
@@ -61,6 +101,8 @@ interface MachineInternals {
   cleanupIndex: number
   postRenderQueue: Array<VoidFunction>
   pendingEvents: Array<any>
+  processing: boolean
+  sendQueue: Array<any>
   start: VoidFunction
   stop: VoidFunction
   flushPostRender: VoidFunction
@@ -86,6 +128,8 @@ function createInternals(): MachineInternals {
     cleanupIndex: 0,
     postRenderQueue: [],
     pendingEvents: [],
+    processing: false,
+    sendQueue: [],
     start: () => {},
     stop: () => {},
     flushPostRender: () => {},
@@ -152,6 +196,8 @@ export function useMachine<T extends MachineSchema>(
     }
   })
   if (isServer) setWakeHandler(wake$)
+
+  if (!isServer) installRafRenderGate()
 
   let internals = untrack(() => internalsSig.value) as MachineInternals | undefined
   if (!internals) {
@@ -417,6 +463,41 @@ export function useMachine<T extends MachineSchema>(
     },
   }))
 
+  const processEvent = (event: any) => {
+    if (self.status !== MachineStatus.Started) return
+
+    // re-resolve props at the event boundary: Qwik commits renders on its
+    // own scheduler, so an event can arrive before the render that follows
+    // a userProps change (e.g. a controls-store update). When userProps is
+    // a function, this reads the live values instead of the last render's
+    // snapshot.
+    self.propsRef.current = computeProps()
+
+    self.previousEventRef.current = self.eventRef.current
+    self.eventRef.current = event
+
+    const currentState = state.get()
+
+    const { transitions, source } = findTransition(machine, currentState, event.type as string)
+    const transition = choose(transitions)
+    if (!transition) return
+
+    // save current transition
+    self.transitionRef.current = transition
+    const target = resolveStateValue(machine, transition.target ?? currentState, source)
+
+    debug("transition", event.type, transition.target || currentState, `(${transition.actions})`)
+
+    const changed = target !== currentState
+    if (changed) {
+      state.set(target)
+    } else if (transition.reenter) {
+      state.invoke(currentState, currentState)
+    } else {
+      action(transition.actions ?? [])
+    }
+  }
+
   const send = (event: any) => {
     if (self.status === MachineStatus.NotStarted && self.startScheduled) {
       // live handlers attach when the client render commits, but the machine
@@ -425,45 +506,25 @@ export function useMachine<T extends MachineSchema>(
       return
     }
 
-    // Defer processing one microtask (mirrors the React adapter). This keeps
-    // re-entrant sends well-ordered: an action that moves DOM focus fires a
-    // synchronous focusin whose send() must queue BEHIND the current action
-    // sequence — processed inline it would overwrite the event mid-sequence
-    // and later actions would read the wrong `event.id`.
-    queueMicrotask(() => {
-      if (self.status !== MachineStatus.Started) return
-
-      // re-resolve props at the event boundary: Qwik commits renders on its
-      // own scheduler, so an event can arrive before the render that follows
-      // a userProps change (e.g. a controls-store update). When userProps is
-      // a function, this reads the live values instead of the last render's
-      // snapshot.
-      self.propsRef.current = computeProps()
-
-      self.previousEventRef.current = self.eventRef.current
-      self.eventRef.current = event
-
-      const currentState = state.get()
-
-      const { transitions, source } = findTransition(machine, currentState, event.type as string)
-      const transition = choose(transitions)
-      if (!transition) return
-
-      // save current transition
-      self.transitionRef.current = transition
-      const target = resolveStateValue(machine, transition.target ?? currentState, source)
-
-      debug("transition", event.type, transition.target || currentState, `(${transition.actions})`)
-
-      const changed = target !== currentState
-      if (changed) {
-        state.set(target)
-      } else if (transition.reenter) {
-        state.invoke(currentState, currentState)
-      } else {
-        action(transition.actions ?? [])
+    // Process synchronously (so state changes reach Qwik's scheduler within
+    // the event handler, and conditional `preventDefault` keeps working), but
+    // serialize re-entrant sends: an action that moves DOM focus fires a
+    // synchronous focusin whose handler calls send() again — running it inline
+    // would overwrite `event`/transition mid-sequence and later actions in the
+    // outer sequence would read the wrong event. Queue it and drain after.
+    if (self.processing) {
+      self.sendQueue.push(event)
+      return
+    }
+    self.processing = true
+    try {
+      processEvent(event)
+      while (self.sendQueue.length) {
+        processEvent(self.sendQueue.shift())
       }
-    })
+    } finally {
+      self.processing = false
+    }
   }
 
   // refresh lifecycle closures so they capture this render's bindables/params
