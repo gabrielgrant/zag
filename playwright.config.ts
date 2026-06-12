@@ -6,12 +6,22 @@ type InferServer<T> = Exclude<T extends Array<infer U> ? U : T, undefined>
 
 type WebServer = InferServer<PlaywrightTestConfig["webServer"]>
 
-const examples = {
+interface Example {
+  dir: string
+  port: string
+  command?: string
+  timeout?: number
+}
+
+const examples: Record<string, Example> = {
   react: { dir: "next-ts", port: "3000" },
   vue: { dir: "nuxt-ts", port: "3001" },
   solid: { dir: "solid-ts", port: "3002" },
   svelte: { dir: "svelte-ts", port: "3003" },
   preact: { dir: "preact-ts", port: "3004" },
+  // production preview: Qwik's preloader makes handler chunks available
+  // immediately, matching the interaction timing the suite expects
+  qwik: { dir: "qwik-ts", port: "3004", command: "pnpm e2e-serve", timeout: 120_000 },
 }
 
 export function getWebServer(): WebServer {
@@ -26,10 +36,11 @@ export function getWebServer(): WebServer {
 
   return {
     cwd: `./examples/${example.dir}`,
-    command: "pnpm dev",
+    command: example.command ?? "pnpm dev",
     env: { PORT: port },
     url: `http://localhost:${port}`,
     reuseExistingServer: !CI,
+    ...(example.timeout && { timeout: example.timeout }),
   }
 }
 
