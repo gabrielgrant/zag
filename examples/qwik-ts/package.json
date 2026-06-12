@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@internationalized/date": "3.10.0",
+    "@internationalized/date": "3.12.1",
     "@zag-js/accordion": "workspace:*",
     "@zag-js/angle-slider": "workspace:*",
     "@zag-js/avatar": "workspace:*",
