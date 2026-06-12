@@ -10,10 +10,14 @@ export default component$(() => {
   const controls = useControls(collapsibleControls)
   const id = useId()
 
-  const service = useMachine(collapsible.machine, {
-    ...controls.state,
-    id,
-  } as collapsible.Props)
+  const service = useMachine(
+    collapsible.machine,
+    () =>
+      ({
+        id,
+        ...controls.values(),
+      }) as collapsible.Props,
+  )
 
   const api = collapsible.connect(service, normalizeProps)
 
@@ -59,7 +63,7 @@ export default component$(() => {
         </div>
       </main>
 
-      <Toolbar controls={controls} viz>
+      <Toolbar controls={controls.ref} viz>
         <StateVisualizer state={service} omit={["stylesRef"]} />
       </Toolbar>
     </>

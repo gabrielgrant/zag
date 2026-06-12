@@ -10,11 +10,15 @@ export default component$(() => {
   const controls = useControls(sliderControls)
   const id = useId()
 
-  const service = useMachine(slider.machine, {
-    ...controls.state,
-    id,
-    defaultValue: [0],
-  } as slider.Props)
+  const service = useMachine(
+    slider.machine,
+    () =>
+      ({
+        id,
+        defaultValue: [0],
+        ...controls.values(),
+      }) as slider.Props,
+  )
 
   const api = slider.connect(service, normalizeProps)
 
@@ -52,7 +56,7 @@ export default component$(() => {
         </form>
       </main>
 
-      <Toolbar controls={controls}>
+      <Toolbar controls={controls.ref}>
         <StateVisualizer state={service} />
       </Toolbar>
     </>

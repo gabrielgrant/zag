@@ -10,11 +10,15 @@ export default component$(() => {
   const controls = useControls(radioControls)
   const id = useId()
 
-  const service = useMachine(radio.machine, {
-    ...controls.state,
-    id,
-    name: "fruits",
-  } as radio.Props)
+  const service = useMachine(
+    radio.machine,
+    () =>
+      ({
+        id,
+        name: "fruits",
+        ...controls.values(),
+      }) as radio.Props,
+  )
 
   const api = radio.connect(service, normalizeProps)
 
@@ -42,7 +46,7 @@ export default component$(() => {
         </form>
       </main>
 
-      <Toolbar controls={controls}>
+      <Toolbar controls={controls.ref}>
         <StateVisualizer state={service} />
       </Toolbar>
     </>
