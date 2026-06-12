@@ -40,6 +40,15 @@ export function getWebServer(): WebServer {
       url: `http://localhost:${sveltePort}`,
       reuseExistingServer: !CI,
     },
+    qwik: {
+      // production preview: Qwik's preloader makes handler chunks available
+      // immediately, matching the interaction timing the suite expects
+      cwd: "./examples/qwik-ts",
+      command: "pnpm e2e-serve",
+      url: "http://localhost:3004",
+      reuseExistingServer: !CI,
+      timeout: 120_000,
+    },
     preact: {
       cwd: "./examples/preact-ts",
       command: `pnpm vite --port ${preactPort}`,
