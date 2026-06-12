@@ -1,4 +1,4 @@
-import { test } from "@playwright/test"
+import { expect, test } from "@playwright/test"
 import { MenuModel } from "./models/menu.model"
 
 let I: MenuModel
@@ -45,6 +45,15 @@ test.describe("menu", () => {
     await I.hoverItem("Delete")
     await I.hoverOut()
     await I.dontSeeHighlightedItem()
+  })
+
+  test("on hover, menu keeps its position", async () => {
+    await I.clickTrigger()
+    await I.seeMenuIsPositioned()
+    const rect = await I.getPositionerRect()
+    await I.hoverItem("Duplicate")
+    await I.seeItemIsHighlighted("Duplicate")
+    expect(await I.getPositionerRect()).toEqual(rect)
   })
 
   test("with keyboard, can select item", async () => {

@@ -103,10 +103,19 @@ export class MenuModel extends Model {
     expect(await isInViewport(this.content, item)).toBe(true)
   }
 
+  private get positioner() {
+    return this.page.locator("[data-scope=menu][data-part=positioner]")
+  }
+
   seeMenuIsPositioned = async () => {
-    const positioner = this.page.locator("[data-scope=menu][data-part=positioner]")
-    await expect(positioner).toHaveCSS("--x", /\d+px/)
-    await expect(positioner).toHaveCSS("--y", /\d+px/)
+    await expect(this.positioner).toHaveCSS("--x", /\d+px/)
+    await expect(this.positioner).toHaveCSS("--y", /\d+px/)
+  }
+
+  getPositionerRect = async () => {
+    const rect = await this.positioner.boundingBox()
+    expect(rect).not.toBeNull()
+    return rect!
   }
 
   getContextTriggerPoint = async (): Promise<{ x: number; y: number }> => {
