@@ -1,4 +1,4 @@
-import { component$, useId } from "@qwik.dev/core"
+import { component$, useId, useSignal } from "@qwik.dev/core"
 import * as pagination from "@zag-js/pagination"
 import { normalizeProps, useMachine } from "@zag-js/qwik"
 import { paginationControls, paginationData } from "@zag-js/shared"
@@ -9,6 +9,7 @@ import { useControls } from "~/hooks/use-controls"
 export default component$(() => {
   const controls = useControls(paginationControls)
   const id = useId()
+  const details = useSignal({})
 
   const service = useMachine(
     pagination.machine,
@@ -16,6 +17,9 @@ export default component$(() => {
       ({
         id,
         count: paginationData.length,
+        onPageChange(d: pagination.PageChangeDetails) {
+          details.value = d
+        },
         ...controls.values(),
       }) as pagination.Props,
   )
@@ -74,6 +78,10 @@ export default component$(() => {
             </ul>
           </nav>
         )}
+        <div class="output">
+          <p>OpenChange Details</p>
+          <pre data-testid="output">{JSON.stringify(details.value, null, 2)}</pre>
+        </div>
       </main>
 
       <Toolbar controls={controls.ref}>
