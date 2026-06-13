@@ -48,8 +48,13 @@ export default component$(() => {
                 <input data-testid={`${toDashCase(value)}-input`} {...api.getItemInputProps({ index, value })} />
               </span>
             ))}
-            <input data-testid="input" placeholder="add tag" {...api.getInputProps()} />
-            <button {...api.getClearTriggerProps()}>X</button>
+            {/* keyed so removing an item span cannot positionally reconcile
+                these onto former item nodes (which would recreate the
+                focused input and drop focus) */}
+            <input key="new-tag-input" data-testid="input" placeholder="add tag" {...api.getInputProps()} />
+            <button key="clear-button" {...api.getClearTriggerProps()}>
+              X
+            </button>
           </div>
           <input {...api.getHiddenInputProps()} />
         </div>
