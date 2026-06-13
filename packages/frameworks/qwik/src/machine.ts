@@ -30,6 +30,7 @@ import { useBindable } from "./bindable"
 import { getContainer, waitUntilRendered } from "./qwik-internal"
 import { createRefs } from "./refs"
 import { setWakeHandler } from "./wake-context"
+import { enqueueReplay } from "./wake-replay"
 
 type AnyFunction = () => string | number | boolean | null | undefined
 
@@ -164,36 +165,28 @@ export function useMachine<T extends MachineSchema>(
    * Interaction wake. During SSR this QRL is serialized as the handler for
    * every zag event prop (see normalize-props), so qwikloader announces the
    * event types and captures interactions that happen before the eager
-   * document-ready wake has completed. On invocation it activates the
-   * component, waits for the activation render to commit, starts the machine,
-   * and replays the captured event into the live handler that the render
-   * registered. Same-turn `preventDefault()` is not possible for this very
-   * first pre-wake event — the QRL chunk loads asynchronously (documented
-   * limitation; equivalent to interacting mid-hydration in other frameworks).
+   * document-ready wake has completed. On invocation it enqueues the captured
+   * event for ordered replay (see wake-replay): the component is activated,
+   * the activation render commits, the machine starts, and the event is
+   * dispatched into the live handler that the render registered — in strict
+   * DOM order relative to other pre-wake events on the same component.
+   * Same-turn `preventDefault()` is not possible for this very first pre-wake
+   * event — the QRL chunk loads asynchronously (documented limitation;
+   * equivalent to interacting mid-hydration in other frameworks).
    *
    * NOTE: like the tasks below, this closure may only capture serializable
    * values — signals only.
    */
-  const wake$ = $(async (event: Event, element: Element) => {
-    if (!activatedSig.value) activatedSig.value = true
-    const container = getContainer(element)
-    const scopedName = `e:${event.type}`
-    for (let attempt = 0; attempt < 20; attempt++) {
-      await waitUntilRendered(container)
-      const current = internalsSig.value
-      if (current) {
-        current.start()
-        const dispatch = (element as any)._qDispatch?.[scopedName]
-        if (dispatch) {
-          if (typeof dispatch === "function") return dispatch(event, element)
-          for (const handler of dispatch) handler?.(event, element)
-          return
-        }
-      }
-      // the activation render may not have been scheduled yet when the
-      // render promise was awaited — yield a macrotask and re-await
-      await new Promise((resolve) => setTimeout(resolve))
-    }
+  const wake$ = $((event: Event, element: Element) => {
+    enqueueReplay({
+      event,
+      element,
+      scopedName: `e:${event.type}`,
+      activate: () => {
+        if (!activatedSig.value) activatedSig.value = true
+      },
+      getInternals: () => internalsSig.value as { start: VoidFunction } | undefined,
+    })
   })
   if (isServer) setWakeHandler(wake$)
 
