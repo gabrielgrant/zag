@@ -43,7 +43,7 @@ export default component$(() => {
       <main class="image-cropper">
         <div {...api.getRootProps()}>
           <div {...api.getViewportProps()}>
-            <img src="https://picsum.photos/seed/a/500/300" crossOrigin="anonymous" {...api.getImageProps()} />
+            <img src="/crop-image.png" {...api.getImageProps()} />
             <div {...api.getSelectionProps()}>
               {handlePositions.map((position) => (
                 <div key={position} {...api.getHandleProps({ position })}>
