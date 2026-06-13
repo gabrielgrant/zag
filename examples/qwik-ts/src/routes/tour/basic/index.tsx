@@ -1,5 +1,5 @@
 import { component$, useId } from "@qwik.dev/core"
-import { normalizeProps, useMachine } from "@zag-js/qwik"
+import { normalizeProps, registerValueSerializer, useMachine } from "@zag-js/qwik"
 import { tourControls, tourData } from "@zag-js/shared"
 import * as tour from "@zag-js/tour"
 import { StateVisualizer } from "~/components/state-visualizer"
@@ -8,6 +8,20 @@ import { useControls } from "~/hooks/use-controls"
 
 /** see pin-input example: live api handle for custom (non-zag) buttons */
 const apiRef: { current?: tour.Api } = {}
+
+/**
+ * The tour machine keeps the steps (which carry target() closures) in
+ * context — un-serializable for SSR resume (Q34 would silently drop the
+ * page's resumable state). Encode steps by reference into this module's
+ * tourData and rehydrate by id.
+ */
+registerValueSerializer({
+  id: "tour-step",
+  match: (v): v is (typeof tourData)[number] =>
+    typeof v === "object" && v !== null && tourData.includes(v as (typeof tourData)[number]),
+  encode: (v) => v.id,
+  decode: (id) => tourData.find((s) => s.id === id)!,
+})
 
 // Qwik has no portal to render into an iframe body; srcdoc with the static
 // content keeps it same-origin so the tour can reach #step-2a inside it
