@@ -13,6 +13,7 @@
     "@internationalized/date": "3.12.1",
     "@zag-js/accordion": "workspace:*",
     "@zag-js/angle-slider": "workspace:*",
+    "@zag-js/async-list": "workspace:*",
     "@zag-js/avatar": "workspace:*",
     "@zag-js/carousel": "workspace:*",
     "@zag-js/cascade-select": "workspace:*",
