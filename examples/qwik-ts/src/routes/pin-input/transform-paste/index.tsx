@@ -28,7 +28,12 @@ export default component$(() => {
   return (
     <>
       <main class="pin-input">
-        <form preventdefault:submit>
+        <form
+          preventdefault:submit
+          onSubmit$={(_e, el) => {
+            console.log(JSON.stringify(Object.fromEntries(new FormData(el))))
+          }}
+        >
           <div {...api.getRootProps()}>
             <label {...api.getLabelProps()}>Enter code:</label>
             <div {...api.getControlProps()}>
