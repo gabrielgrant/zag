@@ -48,14 +48,42 @@ const isEventProp = (key: string) => key.startsWith("on") && key.charCodeAt(2) >
  */
 function wrapHandler(fn: (event: Event) => void) {
   return (event: Event, element: Element) => {
-    if (event.currentTarget !== element) {
-      try {
-        Object.defineProperty(event, "currentTarget", { value: element, configurable: true })
-      } catch {
-        // some synthetic events may not allow redefinition; fall through
+    const invoke = () => {
+      if (event.currentTarget !== element) {
+        try {
+          Object.defineProperty(event, "currentTarget", { value: element, configurable: true })
+        } catch {
+          // some synthetic events may not allow redefinition; fall through
+        }
       }
+      return fn(event)
     }
-    return fn(event)
+
+    // Qwik dispatches from a document-level CAPTURE listener, so handlers
+    // would run before zag's own document-capture utilities (escape
+    // trackers, dismissable layers) — the reverse of element-attached (and
+    // React root-bubble) ordering, which zag's connects are written
+    // against. Re-attach for the same in-flight dispatch at the element so
+    // the handler runs in its native slot (target/bubble phase): still
+    // synchronous within the dispatch, so conditional preventDefault keeps
+    // working, and a handler's stopPropagation no longer starves zag's
+    // document-capture listeners.
+    if (event.eventPhase === Event.CAPTURING_PHASE && event.currentTarget !== element && event.bubbles) {
+      const once = () => invoke()
+      element.addEventListener(event.type, once, { once: true })
+      // if propagation is stopped before reaching the element (native
+      // element-listener semantics), disarm so the stale closure cannot
+      // fire on a future event. Must be a macrotask: microtask checkpoints
+      // run BETWEEN listener invocations of this same dispatch and would
+      // disarm before the event reaches the element.
+      setTimeout(() => element.removeEventListener(event.type, once))
+      return
+    }
+
+    // non-bubbling events only dispatch on their target (element === target
+    // here), at-target/bubble dispatches are already in their native slot,
+    // and wake-replayed events (eventPhase NONE) have finished propagating
+    return invoke()
   }
 }
 
