@@ -2,6 +2,7 @@ import { createNormalizer } from "@zag-js/types"
 import type { CSSProperties, HTMLElementAttrs, QwikIntrinsicElements } from "@qwik.dev/core"
 import { isServer } from "@qwik.dev/core/build"
 import { getWakeHandler } from "./wake-context"
+import { enqueueDeferred, isReplayDraining } from "./wake-replay"
 
 type Dict = Record<string, any>
 
@@ -57,6 +58,17 @@ function wrapHandler(fn: (event: Event) => void) {
         }
       }
       return fn(event)
+    }
+
+    // A pre-wake event for some component is still being replayed in FIFO
+    // order (see wake-replay). If the eager wake completed mid-sequence, this
+    // live handler must not overtake the queued earlier event — defer it
+    // behind the drain so the machine sees events in DOM order. Rare (only
+    // during the brief wake window); the lost same-turn preventDefault matches
+    // the pre-wake interaction limitation already documented for the wake QRL.
+    if (isReplayDraining()) {
+      enqueueDeferred(invoke)
+      return
     }
 
     // Qwik dispatches from a document-level CAPTURE listener, so handlers
