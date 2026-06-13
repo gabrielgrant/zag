@@ -11,8 +11,9 @@ import type { ControlsRef } from "~/hooks/use-controls"
  * store and string keys.
  */
 export const Controls = (props: { store: ControlsRef }) => {
-  const { name, state } = props.store
-  const config = (allControls as any)[name] ?? {}
+  const { name, state, config: inlineConfig } = props.store
+  // inline route configs travel with the ref; named configs are looked up
+  const config = inlineConfig ?? (allControls as any)[name] ?? {}
 
   return (
     <div class="controls-container">

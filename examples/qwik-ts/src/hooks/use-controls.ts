@@ -11,6 +11,13 @@ import { getControlDefaults, getTransformedControlValues, type ControlRecord, ty
 export interface ControlsRef {
   name: string
   state: any
+  /**
+   * Inline configs (defined in a route rather than exported from
+   * @zag-js/shared) have no resolvable name, so the config travels with the
+   * ref. Only serializable configs (no `transformValue`) can cross the
+   * component$ boundary this way — which inline route configs are.
+   */
+  config?: ControlRecord
 }
 
 export interface UseControlsReturn<T extends ControlRecord = ControlRecord> {
@@ -34,6 +41,8 @@ export function useControls<T extends ControlRecord>(config: T): UseControlsRetu
     config,
     state,
     values: () => getTransformedControlValues(config, state) as ControlValue<T>,
-    ref: { name, state },
+    // named (shared) configs may hold functions, so pass them by name only;
+    // inline configs are serializable and travel with the ref
+    ref: { name, state, config: name ? undefined : config },
   }
 }
