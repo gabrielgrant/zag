@@ -94,16 +94,22 @@ import { CalendarDate, parseDate } from "@internationalized/date"
 registerValueSerializer({
   id: "i18n-date",
   match: (v): v is CalendarDate => v instanceof CalendarDate,
-  encode: (v) => v.toString(),
-  decode: (s) => parseDate(s as string),
+  serialize: (v) => v.toString(),
+  deserialize: (s) => parseDate(s as string),
 })
 ```
 
+The codec shape (`serialize` / `deserialize`, with `serialize` optional and
+falling back to a value's `[SerializerSymbol]`) mirrors Qwik's own
+`useSerializer$`; `id` + `match` are added so the generic adapter can dispatch
+the right codec at runtime. See `DESIGN.md` for the relationship to Qwik's
+native serializers.
+
 Put these registrations in a module that both the server and client import
 before rendering the page (importing it for its side effects is enough). The
-adapter then stores the encoded form in resumable signals and decodes on read.
-If a value reaches a signal with no matching serializer registered, the adapter
-logs a warning and stores it un-encoded (it will not survive resume).
+adapter then stores the serialized form in resumable signals and reconstructs it
+on read. If a value reaches a signal with no matching serializer registered, the
+adapter logs a warning and stores it as-is (it will not survive resume).
 
 You only need this for machines whose context holds class instances; the
 majority of components work with no serializers at all.
@@ -115,7 +121,7 @@ majority of components work with no serializers at all.
 | `useMachine(machine, props?)`       | Runs a machine, returns its `Service`. Props may be object or fn.    |
 | `normalizeProps`                    | Normalizer mapping Zag props to Qwik native attributes/events.       |
 | `mergeProps`                        | Re-exported from `@zag-js/core`.                                     |
-| `registerValueSerializer(codec)`    | Registers an encode/decode codec for a non-serializable context type.|
+| `registerValueSerializer(codec)`    | Registers a serialize/deserialize codec for a non-serializable context type.|
 
 ## License
 

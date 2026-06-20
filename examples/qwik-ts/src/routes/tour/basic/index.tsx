@@ -19,8 +19,8 @@ registerValueSerializer({
   id: "tour-step",
   match: (v): v is (typeof tourData)[number] =>
     typeof v === "object" && v !== null && tourData.includes(v as (typeof tourData)[number]),
-  encode: (v) => v.id,
-  decode: (id) => tourData.find((s) => s.id === id)!,
+  serialize: (v) => v.id,
+  deserialize: (id) => tourData.find((s) => s.id === id)!,
 })
 
 // Qwik has no portal to render into an iframe body; srcdoc with the static
