@@ -174,12 +174,43 @@ guarded by `isEqual`. Values pass through the value-serializer registry on write
 
 ## Value-serializer registry (`value-serializer.ts`)
 
-A module-level registry of `{ id, match, encode, decode }` codecs. `encodeValue`
-walks arrays and replaces any matched value with `{ __zag_encoded__: id, d }`;
-`decodeValue` reverses it. Registration is global because the registry is
-consulted by every machine on the page; app code registers codecs (as a
-side-effecting import) before rendering. A decode with no matching id warns and
-returns the value unchanged.
+A module-level registry of `{ id, match, serialize?, deserialize }` codecs.
+`encodeValue` walks arrays and replaces any matched value with
+`{ __zag_encoded__: id, d }`; `decodeValue` reverses it via the codec found by
+`id`. If a matched codec has no `serialize`, the value's `[SerializerSymbol]`
+method is used (mirroring Qwik's `SerializerArgObject`). Registration is global
+because the registry is consulted by every machine on the page; app code
+registers codecs (as a side-effecting import) before rendering. A decode with no
+matching id warns and returns the value unchanged.
+
+### Relationship to Qwik's custom serializers
+
+Qwik v2 ships its own custom-serialization API — `useSerializer$` /
+`createSerializer$` (which produce a `SerializerSignal`, a computed-style signal
+with `{ deserialize, initial?, serialize? }`) and `SerializerSymbol` (a method a
+class attaches to serialize itself). This adapter deliberately does **not** build
+`useBindable` on them, for reasons specific to being a generic adapter:
+
+- **The type is known by the machine/app, not the call site.** `useSerializer$`
+  is designed for a call site that statically knows the concrete type
+  (`deserialize: (d) => new Color(d)`). `useBindable` is generic — it cannot
+  statically reference the reconstruction logic for whatever a given machine
+  keeps in context. The registry pushes that knowledge to app-level registration
+  instead, dispatched by a runtime `match` predicate.
+- **QRL capture.** `useSerializer$`'s argument is QRL-extracted and may only
+  capture serializable values, so it cannot close over a runtime-provided codec
+  or the machine.
+- **Third-party classes.** `SerializerSymbol` requires owning the class; we
+  cannot add it to `@internationalized/date`'s `CalendarDate` or zag's `Color`.
+- **Read/write vs. computed.** A bindable is the source of truth and needs
+  imperative `set()`; a `SerializerSignal` is a `ComputedSignal` (derived).
+
+To stay close where it is cheap, the codec shape mirrors Qwik's
+`SerializerArgObject` (`serialize` / `deserialize`, `serialize` optional with a
+`[SerializerSymbol]` fallback). Whether `useBindable` could be re-expressed on
+top of `useSerializer$` (its `serialize`/`deserialize` delegating to the
+module-level registry functions, which a QRL *can* capture) is tracked as an
+open investigation — see `investigations/useBindable-on-useSerializer.md`.
 
 ## rAF render gate (`installRafRenderGate`)
 
@@ -208,7 +239,7 @@ users.
 | File                  | Responsibility                                                        |
 | --------------------- | --------------------------------------------------------------------- |
 | `machine.ts`          | `useMachine`, internals, send/process, lifecycle tasks, rAF gate.     |
-| `bindable.ts`         | `useBindable` — signal-backed `Bindable` with serializer encode/decode.|
+| `bindable.ts`         | `useBindable` — signal-backed `Bindable` with serializer encode/decode on write/read.|
 | `normalize-props.ts`  | `normalizeProps` — name/event mapping, SSR strip, handler wrapping.    |
 | `wake-context.ts`     | Module slot publishing the SSR wake QRL to `normalizeProps`.           |
 | `wake-replay.ts`      | FIFO drain ordering pre-wake event replay + live-handler deferral.     |

@@ -21,33 +21,33 @@ import { parse as parseColor, type Color } from "@zag-js/color-picker"
 registerValueSerializer({
   id: "i18n-date",
   match: (v): v is CalendarDate => v instanceof CalendarDate,
-  encode: (v) => v.toString(),
-  decode: (s) => parseDate(s as string),
+  serialize: (v) => v.toString(),
+  deserialize: (s) => parseDate(s as string),
 })
 
 registerValueSerializer({
   id: "i18n-datetime",
   match: (v): v is CalendarDateTime => v instanceof CalendarDateTime,
-  encode: (v) => v.toString(),
-  decode: (s) => parseDateTime(s as string),
+  serialize: (v) => v.toString(),
+  deserialize: (s) => parseDateTime(s as string),
 })
 
 registerValueSerializer({
   id: "i18n-zoned",
   match: (v): v is ZonedDateTime => v instanceof ZonedDateTime,
-  encode: (v) => ({ iso: v.toAbsoluteString(), tz: v.timeZone }),
-  decode: (d: any) => parseAbsolute(d.iso, d.tz),
+  serialize: (v) => ({ iso: v.toAbsoluteString(), tz: v.timeZone }),
+  deserialize: (d: any) => parseAbsolute(d.iso, d.tz),
 })
 
 registerValueSerializer({
   id: "incomplete-date",
   match: (v): v is IncompleteDate => v instanceof IncompleteDate,
-  encode: (v) => ({
+  serialize: (v) => ({
     cal: v.calendar.identifier,
     hc: v.hourCycle,
     f: [v.era, v.year, v.month, v.day, v.hour, v.dayPeriod, v.minute, v.second, v.millisecond, v.offset],
   }),
-  decode: (d: any) => {
+  deserialize: (d: any) => {
     const out = new IncompleteDate(createCalendar(d.cal), d.hc)
     ;[
       out.era,
@@ -68,8 +68,8 @@ registerValueSerializer({
 registerValueSerializer({
   id: "color",
   match: (v): v is Color => typeof v === "object" && v !== null && "toFormat" in v && "toHexInt" in v,
-  encode: (v) => v.toString("css"),
-  decode: (s) => parseColor(s as string),
+  serialize: (v) => v.toString("css"),
+  deserialize: (s) => parseColor(s as string),
 })
 
 /**
