@@ -129,3 +129,55 @@ Bring results + a recommendation; ask them to confirm judgment/taste, not facts:
 
 The aim: every factual claim is backed by an experiment in this repo; the Qwik
 team only validates our interpretation and our taste call.
+
+## Results (executed against `@qwik.dev/core@2.0.0-beta.36`)
+
+The pivotal feasibility questions are answered, with positive results. Evidence
+was gathered from the Qwik runtime source, a build probe, and a browser test in a
+throwaway route (`examples/qwik-ts/src/routes/_scratch-serializer/`, since
+removed) plus `e2e/_scratch.e2e.ts`.
+
+**E1 — a `SerializerSignal` IS writable as a source of truth. (confirmed)**
+`SerializerSignalImpl extends ComputedSignalImpl` and does **not** override
+`set value`. `ComputedSignalImpl.set value` (core.mjs) writes the underlying
+value *and* defensively sets `$canWrite$ = false` on any pending compute job, so a
+written value is not clobbered by a later deserialize. (The read-only signal that
+throws `qError(31)` is `WrappedSignal`, which `useSerializer$` does not return.)
+Confirmed at runtime: clicking a button that did `s.value = new Box(n+1)`
+incremented the rendered value 7 → 8 → 9 and persisted. So the
+"computed/derived vs. read-write source-of-truth" tension flagged in the plan
+does **not** block adoption.
+
+**E2 — the QRL legally captures the module-level codecs. (confirmed, with a
+required change)** The optimizer extracted the `useSerializer$` arg into its own
+chunk and hoisted `encodeValue`/`decodeValue` as imports — exactly the intended
+mechanism. The first build *failed* only because those functions are not in the
+package's public exports (`"encodeValue" is not exported by @zag-js/qwik`).
+**Required change to adopt:** export `encodeValue`/`decodeValue` (or an
+equivalent public codec entry) from `@zag-js/qwik` so the extracted QRL chunk can
+import them. The non-serializable initial value is handled by pre-encoding it
+(`const enc = encodeValue(initial)`) so the QRL captures only the serializable
+encoded form.
+
+**E3 — SSR serialize + resume deserialize round-trip. (confirmed)** SSR HTML
+rendered the deserialized value (`<span data-testid="val">7`) and contained the
+encoded form (`__zag_encoded__` / `"box"`) in the resumable state; on the client
+the value resumed as the reconstructed class instance (test asserted `7` before
+any interaction).
+
+**E4 (hook-scope alignment) and E5 (recompute/cost) — not yet run.** These need a
+real `useBindable` rewritten on `useSerializer$` wired to an actual machine, which
+crosses from investigation into implementation. Deferred to the implementation
+phase (only if the direction is approved).
+
+### Conclusion / recommendation
+
+Building `useBindable` on `useSerializer$` is **feasible** — the two risks that
+could have killed it (writability and QRL capture) are both resolved. Adoption
+would (a) require exporting the registry codecs publicly, (b) pre-encode the
+initial value, and (c) still keep the `id`/`match` registry for the generic
+dispatch `useSerializer$` doesn't provide. Recommend taking this evidence to the
+Qwik team to confirm two taste calls before investing in the rewrite: whether a
+`SerializerSignal` written as a source of truth is a supported/idiomatic use, and
+whether delegating `serialize`/`deserialize` to a module-level registry is a
+blessed pattern for a generic adapter.
