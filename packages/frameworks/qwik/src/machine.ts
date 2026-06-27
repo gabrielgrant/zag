@@ -35,6 +35,17 @@ import { enqueueReplay } from "./wake-replay"
 type AnyFunction = () => string | number | boolean | null | undefined
 
 /**
+ * Defensive upper bound on events buffered in the one-task window between the
+ * client render commit (live handlers attached, so `send` can be called) and
+ * the machine `start()` that runs on the next tick. Only a handful of events
+ * can realistically land in that gap; the cap simply prevents unbounded growth
+ * in the pathological case where `start()` never runs. Events past the cap are
+ * dropped, matching other adapters' "events before start are not delivered"
+ * semantics.
+ */
+const MAX_PENDING_EVENTS = 64
+
+/**
  * Zag machines do post-render DOM work (focus management, element measurement,
  * `checkRenderedElements`) inside `requestAnimationFrame`, assuming the
  * framework has committed the current render by the next frame — which React
@@ -495,7 +506,7 @@ export function useMachine<T extends MachineSchema>(
     if (self.status === MachineStatus.NotStarted && self.startScheduled) {
       // live handlers attach when the client render commits, but the machine
       // starts one task later — buffer events that land in that gap
-      if (self.pendingEvents.length < 64) self.pendingEvents.push(event)
+      if (self.pendingEvents.length < MAX_PENDING_EVENTS) self.pendingEvents.push(event)
       return
     }
 
