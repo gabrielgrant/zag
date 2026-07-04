@@ -32,22 +32,29 @@ export default component$(() => {
         <div {...api.getRootProps()}>
           <label {...api.getLabelProps()}>Enter frameworks:</label>
           <div {...api.getControlProps()}>
-            {api.value.map((value, index) => (
-              <span key={`${toDashCase(value)}-tag-${index}`} {...api.getItemProps({ index, value })}>
-                <div data-testid={`${toDashCase(value)}-tag`} {...api.getItemPreviewProps({ index, value })}>
-                  <span data-testid={`${toDashCase(value)}-valuetext`} {...api.getItemTextProps({ index, value })}>
-                    {value}{" "}
+            {/* render `null` (not an empty mapped array) when there are no
+                tags: with an empty [] child, Qwik's keyed diff recreates the
+                trailing keyed siblings on every subsequent re-render, which
+                destroys the focused new-tag input each frame and locks the
+                machine into a focus/blur render loop */}
+            {api.value.length === 0
+              ? null
+              : api.value.map((value, index) => (
+                  <span key={`${toDashCase(value)}-tag-${index}`} {...api.getItemProps({ index, value })}>
+                    <div data-testid={`${toDashCase(value)}-tag`} {...api.getItemPreviewProps({ index, value })}>
+                      <span data-testid={`${toDashCase(value)}-valuetext`} {...api.getItemTextProps({ index, value })}>
+                        {value}{" "}
+                      </span>
+                      <button
+                        data-testid={`${toDashCase(value)}-close-button`}
+                        {...api.getItemDeleteTriggerProps({ index, value })}
+                      >
+                        &#x2715;
+                      </button>
+                    </div>
+                    <input data-testid={`${toDashCase(value)}-input`} {...api.getItemInputProps({ index, value })} />
                   </span>
-                  <button
-                    data-testid={`${toDashCase(value)}-close-button`}
-                    {...api.getItemDeleteTriggerProps({ index, value })}
-                  >
-                    &#x2715;
-                  </button>
-                </div>
-                <input data-testid={`${toDashCase(value)}-input`} {...api.getItemInputProps({ index, value })} />
-              </span>
-            ))}
+                ))}
             {/* keyed so removing an item span cannot positionally reconcile
                 these onto former item nodes (which would recreate the
                 focused input and drop focus) */}
