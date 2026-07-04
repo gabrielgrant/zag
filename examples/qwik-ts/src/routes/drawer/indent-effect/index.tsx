@@ -19,7 +19,6 @@ export default component$(() => {
   // so the component re-renders and re-reads the snapshot (`stack` is a
   // module-level const, so the task QRL can reference it)
   const stackTick = useSignal(0)
-  // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(({ cleanup }) => {
     cleanup(stack.subscribe(() => stackTick.value++))
   })
