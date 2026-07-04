@@ -5,6 +5,7 @@ import {
   parseAbsolute,
   parseDate,
   parseDateTime,
+  toCalendar,
 } from "@internationalized/date"
 import { registerValueSerializer } from "@zag-js/qwik"
 import { createCalendar } from "@internationalized/date"
@@ -18,18 +19,28 @@ import { parse as parseColor, type Color } from "@zag-js/color-picker"
  * the encoded form in resumable signals. See @zag-js/qwik value-serializer.
  */
 
+// `toString()` renders the *Gregorian* ISO form regardless of the value's
+// calendar system, so the calendar identifier is carried alongside and the
+// date converted back on decode (e.g. the custom-calendar example's Persian
+// dates would otherwise silently resume as Gregorian).
 registerValueSerializer({
   id: "i18n-date",
   match: (v): v is CalendarDate => v instanceof CalendarDate,
-  serialize: (v) => v.toString(),
-  deserialize: (s) => parseDate(s as string),
+  serialize: (v) => ({ iso: v.toString(), cal: v.calendar.identifier }),
+  deserialize: (d: any) => {
+    const parsed = parseDate(d.iso)
+    return d.cal === "gregory" ? parsed : toCalendar(parsed, createCalendar(d.cal))
+  },
 })
 
 registerValueSerializer({
   id: "i18n-datetime",
   match: (v): v is CalendarDateTime => v instanceof CalendarDateTime,
-  serialize: (v) => v.toString(),
-  deserialize: (s) => parseDateTime(s as string),
+  serialize: (v) => ({ iso: v.toString(), cal: v.calendar.identifier }),
+  deserialize: (d: any) => {
+    const parsed = parseDateTime(d.iso)
+    return d.cal === "gregory" ? parsed : toCalendar(parsed, createCalendar(d.cal))
+  },
 })
 
 registerValueSerializer({
