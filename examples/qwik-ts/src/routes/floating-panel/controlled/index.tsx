@@ -6,7 +6,6 @@ const AutoSizingContent = component$(() => {
   const ref = useSignal<HTMLDivElement>()
   const size = useSignal({ width: 0, height: 0 })
 
-  // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(({ cleanup }) => {
     const node = ref.value
     if (!node) return
