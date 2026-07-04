@@ -2,6 +2,9 @@ packages:
   - packages/**
   - shared
   - examples/**
+  # qwik's SSR build emits server/package.json inside the example; exclude it
+  # so build output is never picked up as a workspace package
+  - '!examples/qwik-ts/server'
   - starters/**
   - website
 
