@@ -128,19 +128,34 @@ function getSizeMiddleware(opts: Options) {
         availableWidth = Math.floor(availableWidth)
         availableHeight = Math.floor(availableHeight)
 
-        if (!isApproximatelyEqual(lastReferenceWidth, referenceWidth)) {
+        // the DOM-presence checks re-write after a framework render that
+        // re-serializes the style attribute wholesale (e.g. qwik) has dropped
+        // previously written vars
+        if (
+          !isApproximatelyEqual(lastReferenceWidth, referenceWidth) ||
+          !floating.style.getPropertyValue("--reference-width")
+        ) {
           floating.style.setProperty("--reference-width", `${referenceWidth}px`)
           lastReferenceWidth = referenceWidth
         }
-        if (!isApproximatelyEqual(lastReferenceHeight, referenceHeight)) {
+        if (
+          !isApproximatelyEqual(lastReferenceHeight, referenceHeight) ||
+          !floating.style.getPropertyValue("--reference-height")
+        ) {
           floating.style.setProperty("--reference-height", `${referenceHeight}px`)
           lastReferenceHeight = referenceHeight
         }
-        if (!isApproximatelyEqual(lastAvailableWidth, availableWidth)) {
+        if (
+          !isApproximatelyEqual(lastAvailableWidth, availableWidth) ||
+          !floating.style.getPropertyValue("--available-width")
+        ) {
           floating.style.setProperty("--available-width", `${availableWidth}px`)
           lastAvailableWidth = availableWidth
         }
-        if (!isApproximatelyEqual(lastAvailableHeight, availableHeight)) {
+        if (
+          !isApproximatelyEqual(lastAvailableHeight, availableHeight) ||
+          !floating.style.getPropertyValue("--available-height")
+        ) {
           floating.style.setProperty("--available-height", `${availableHeight}px`)
           lastAvailableHeight = availableHeight
         }
@@ -235,6 +250,7 @@ function getPlacementImpl(
    * -----------------------------------------------------------------------------*/
 
   let middleware: (Middleware | undefined)[] = []
+  let cancelVarRecheck: VoidFunction | undefined
   let cachedMiddlewareFloating: HTMLElement | null = null
   let restoreFloatingStyles: VoidFunction | undefined
   let restoreArrowStyles: VoidFunction | undefined
@@ -322,11 +338,14 @@ function getPlacementImpl(
     const x = roundByDpr(win, pos.x)
     const y = roundByDpr(win, pos.y)
 
-    if (!isApproximatelyEqual(lastX, x)) {
+    // re-write even when unchanged if the property is gone from the DOM:
+    // frameworks that re-serialize the style attribute wholesale (e.g. qwik)
+    // can drop these vars between updates
+    if (!isApproximatelyEqual(lastX, x) || !floating.style.getPropertyValue("--x")) {
       floating.style.setProperty("--x", `${x}px`)
       lastX = x
     }
-    if (!isApproximatelyEqual(lastY, y)) {
+    if (!isApproximatelyEqual(lastY, y) || !floating.style.getPropertyValue("--y")) {
       floating.style.setProperty("--y", `${y}px`)
       lastY = y
     }
@@ -343,13 +362,25 @@ function getPlacementImpl(
     }
 
     // compute z-index only once to avoid forced reflow on every update
-    if (!zIndexComputed) {
+    // (recompute if a style-attribute reset dropped it)
+    if (!zIndexComputed || !floating.style.getPropertyValue("--z-index")) {
       const contentEl = floating.firstElementChild
       if (contentEl) {
         floating.style.setProperty("--z-index", getComputedStyle(contentEl).zIndex)
         zIndexComputed = true
       }
     }
+
+    // a framework render that re-serializes the style attribute (e.g. qwik on
+    // the pre- to post-placement style transition) can drop the vars written
+    // above after this update has finished; recheck one frame later and run a
+    // single healing update. Self-limiting: the healing update finds the vars
+    // present and schedules no further work.
+    cancelVarRecheck?.()
+    cancelVarRecheck = raf(() => {
+      const el = resolveFloating()
+      if (el?.isConnected && !el.style.getPropertyValue("--x")) runUpdate()
+    })
   }
 
   async function runUpdate() {
@@ -365,6 +396,7 @@ function getPlacementImpl(
 
   return () => {
     cancelAutoUpdate()
+    cancelVarRecheck?.()
     restoreArrowStyles?.()
     restoreFloatingStyles?.()
     onPositioned?.({ placed: false })
