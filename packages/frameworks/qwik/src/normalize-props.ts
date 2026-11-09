@@ -118,6 +118,39 @@ function toQwikProp(key: string) {
   return key.toLowerCase()
 }
 
+/**
+ * `defaultValue` / `defaultChecked` are initial values: zag writes later
+ * changes to the element itself (as React only applies them on mount). Mapped
+ * to Qwik's `value` / `checked`, every change would be written back on the next
+ * render and could overwrite what the user is typing (a number input showing
+ * "0.25" for a typed ".25"). On the client, keep emitting the value the element
+ * was created with, so Qwik never re-applies it. Elements are identified by
+ * their id: a part not in the document yet is being created and takes the
+ * current value; a server-rendered one keeps the value it was rendered with.
+ */
+const pendingInitial = new Map<string, unknown>()
+const initialByElement = new WeakMap<Element, unknown>()
+
+function initialValue(id: unknown, key: "defaultValue" | "defaultChecked", value: unknown) {
+  if (typeof id !== "string" || !id) return value
+  const el = document.getElementById(id)
+  if (!el) {
+    pendingInitial.set(id, value)
+    return value
+  }
+  if (initialByElement.has(el)) return initialByElement.get(el)
+  let initial: unknown
+  if (pendingInitial.has(id)) {
+    initial = pendingInitial.get(id)
+    pendingInitial.delete(id)
+  } else {
+    // resumed from SSR: the rendered attribute is what Qwik's vnode holds
+    initial = key === "defaultChecked" ? el.hasAttribute("checked") : (el.getAttribute("value") ?? value)
+  }
+  initialByElement.set(el, initial)
+  return initial
+}
+
 export const normalizeProps = createNormalizer<PropTypes>((props) => {
   const normalized: Dict = {}
 
@@ -147,6 +180,11 @@ export const normalizeProps = createNormalizer<PropTypes>((props) => {
       // see style.ts: Qwik rewrites the whole attribute when it changes
       if (!isServer) preserveElementStyles()
       normalized.style = toStyleString(value)
+      continue
+    }
+
+    if (!isServer && (key === "defaultValue" || key === "defaultChecked")) {
+      normalized[toQwikProp(key)] = initialValue(props.id, key, value)
       continue
     }
 
