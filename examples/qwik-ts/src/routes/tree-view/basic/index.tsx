@@ -13,44 +13,50 @@ interface Node {
   disabled?: boolean
 }
 
-const collection = tree.collection<Node>({
-  nodeToValue: (node) => node.id,
-  nodeToString: (node) => node.name,
-  rootNode: {
-    id: "ROOT",
-    name: "",
-    children: [
-      {
-        id: "node_modules",
-        name: "node_modules",
-        children: [
-          { id: "node_modules/zag-js", name: "zag-js" },
-          { id: "node_modules/pandacss", name: "panda" },
-          {
-            id: "node_modules/@types",
-            name: "@types",
-            children: [
-              { id: "node_modules/@types/react", name: "react" },
-              { id: "node_modules/@types/react-dom", name: "react-dom" },
-            ],
-          },
-        ],
-      },
-      {
-        id: "src",
-        name: "src",
-        children: [
-          { id: "src/app.tsx", name: "app.tsx" },
-          { id: "src/index.ts", name: "index.ts" },
-        ],
-      },
-      { id: "panda.config", name: "panda.config.ts" },
-      { id: "package.json", name: "package.json" },
-      { id: "renovate.json", name: "renovate.json" },
-      { id: "readme.md", name: "README.md" },
-    ],
-  },
-})
+// Created on first use rather than at module load: in production builds the
+// optimizer places this route's component and the machine package in chunks
+// that import each other, so calling into the machine package while this
+// module evaluates reads a binding that isn't initialized yet.
+let collectionCache: ReturnType<typeof tree.collection<Node>> | undefined
+const getCollection = () =>
+  (collectionCache ??= tree.collection<Node>({
+    nodeToValue: (node) => node.id,
+    nodeToString: (node) => node.name,
+    rootNode: {
+      id: "ROOT",
+      name: "",
+      children: [
+        {
+          id: "node_modules",
+          name: "node_modules",
+          children: [
+            { id: "node_modules/zag-js", name: "zag-js" },
+            { id: "node_modules/pandacss", name: "panda" },
+            {
+              id: "node_modules/@types",
+              name: "@types",
+              children: [
+                { id: "node_modules/@types/react", name: "react" },
+                { id: "node_modules/@types/react-dom", name: "react-dom" },
+              ],
+            },
+          ],
+        },
+        {
+          id: "src",
+          name: "src",
+          children: [
+            { id: "src/app.tsx", name: "app.tsx" },
+            { id: "src/index.ts", name: "index.ts" },
+          ],
+        },
+        { id: "panda.config", name: "panda.config.ts" },
+        { id: "package.json", name: "package.json" },
+        { id: "renovate.json", name: "renovate.json" },
+        { id: "readme.md", name: "README.md" },
+      ],
+    },
+  }))
 
 /** see pin-input example: live api handle for custom (non-zag) buttons */
 const apiRef: { current?: tree.Api } = {}
@@ -103,7 +109,7 @@ export default component$(() => {
     () =>
       ({
         id,
-        collection,
+        collection: getCollection(),
         ...controls.values(),
       }) as tree.Props,
   )
@@ -127,7 +133,7 @@ export default component$(() => {
             )}
           </div>
           <div {...api.getTreeProps()}>
-            {collection.rootNode.children?.map((node, index) => (
+            {getCollection().rootNode.children?.map((node, index) => (
               <TreeNode key={node.id} node={node} indexPath={[index]} api={api} />
             ))}
           </div>

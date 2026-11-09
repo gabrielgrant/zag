@@ -15,12 +15,18 @@ interface Node {
   states?: Node[]
 }
 
-const collection = cascadeSelect.collection<Node>({
-  nodeToValue: (node) => node.value,
-  nodeToString: (node) => node.label,
-  nodeToChildren: (node) => node.continents ?? node.countries ?? node.states ?? [],
-  rootNode: cascadeSelectData as Node,
-})
+// Created on first use rather than at module load: in production builds the
+// optimizer places this route's component and the machine package in chunks
+// that import each other, so calling into the machine package while this
+// module evaluates reads a binding that isn't initialized yet.
+let collectionCache: ReturnType<typeof cascadeSelect.collection<Node>> | undefined
+const getCollection = () =>
+  (collectionCache ??= cascadeSelect.collection<Node>({
+    nodeToValue: (node) => node.value,
+    nodeToString: (node) => node.label,
+    nodeToChildren: (node) => node.continents ?? node.countries ?? node.states ?? [],
+    rootNode: cascadeSelectData as Node,
+  }))
 
 interface TreeNodeProps {
   node: Node
@@ -36,7 +42,7 @@ const TreeNode = (props: TreeNodeProps) => {
 
   const nodeProps = { indexPath, value, item: node }
   const nodeState = api.getItemState(nodeProps)
-  const children = collection.getNodeChildren(node)
+  const children = getCollection().getNodeChildren(node)
 
   return (
     <>
@@ -44,7 +50,7 @@ const TreeNode = (props: TreeNodeProps) => {
         {children.map((item, index) => {
           const itemProps = {
             indexPath: [...indexPath, index],
-            value: [...value, collection.getNodeValue(item)],
+            value: [...value, getCollection().getNodeValue(item)],
             item,
           }
 
@@ -59,12 +65,12 @@ const TreeNode = (props: TreeNodeProps) => {
           )
         })}
       </ul>
-      {nodeState.highlightedChild && collection.isBranchNode(nodeState.highlightedChild) && (
+      {nodeState.highlightedChild && getCollection().isBranchNode(nodeState.highlightedChild) && (
         <TreeNode
           node={nodeState.highlightedChild}
           api={api}
           indexPath={[...indexPath, nodeState.highlightedIndex]}
-          value={[...value, collection.getNodeValue(nodeState.highlightedChild)]}
+          value={[...value, getCollection().getNodeValue(nodeState.highlightedChild)]}
         />
       )}
     </>
@@ -80,7 +86,7 @@ export default component$(() => {
     () =>
       ({
         id,
-        collection,
+        collection: getCollection(),
         name: "location",
         ...controls.values(),
       }) as cascadeSelect.Props,
@@ -111,7 +117,7 @@ export default component$(() => {
           {/* UI select */}
           <div {...api.getPositionerProps()}>
             <div {...api.getContentProps()}>
-              <TreeNode node={collection.rootNode} api={api} />
+              <TreeNode node={getCollection().rootNode} api={api} />
             </div>
           </div>
         </div>
