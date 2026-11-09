@@ -1,6 +1,7 @@
 import { createNormalizer } from "@zag-js/types"
 import type { CSSProperties, HTMLElementAttrs, QwikIntrinsicElements } from "@qwik.dev/core"
 import { isServer } from "@qwik.dev/core/build"
+import { preserveElementStyles, toStyleString } from "./style"
 import { getWakeHandler } from "./wake-context"
 import { enqueueDeferred, isReplayDraining } from "./wake-replay"
 
@@ -117,27 +118,6 @@ function toQwikProp(key: string) {
   return key.toLowerCase()
 }
 
-/**
- * Style must be emitted as a stable string, not an object. Zag's popper
- * positions floating elements by writing CSS custom properties (`--x`,
- * `--y`, ...) straight onto the DOM node; connect returns a fresh style
- * object each render, which Qwik treats as changed and re-serializes,
- * wiping those properties (the menu would jump to the top-left on any
- * re-render, e.g. hover). An identical string diffs as unchanged, so the
- * attribute — and popper's properties — are left alone.
- */
-export function toStyleString(style: Record<string, number | string | undefined>) {
-  let string = ""
-  for (let key in style) {
-    const value = style[key]
-    if (value === null || value === undefined) continue
-    // camelCase to kebab-case, except CSS custom properties
-    if (!key.startsWith("--")) key = key.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`)
-    string += `${key}:${value};`
-  }
-  return string
-}
-
 export const normalizeProps = createNormalizer<PropTypes>((props) => {
   const normalized: Dict = {}
 
@@ -161,6 +141,8 @@ export const normalizeProps = createNormalizer<PropTypes>((props) => {
     }
 
     if (key === "style" && typeof value === "object" && value !== null) {
+      // see style.ts: Qwik rewrites the whole attribute when it changes
+      if (!isServer) preserveElementStyles()
       normalized.style = toStyleString(value)
       continue
     }
