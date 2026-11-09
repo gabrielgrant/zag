@@ -1,0 +1,39 @@
+import { component$, useId } from "@qwik.dev/core"
+import * as fileUpload from "@zag-js/file-upload"
+import { normalizeProps, useMachine } from "@zag-js/qwik"
+
+export default component$(() => {
+  const service = useMachine(fileUpload.machine, { id: useId() })
+  const api = fileUpload.connect(service, normalizeProps)
+
+  return (
+    <main class="file-upload">
+      <div {...api.getRootProps()}>
+        <div {...api.getDropzoneProps({ disableClick: true })} data-cover="">
+          {api.dragging && <p>Drop any files here to upload</p>}
+        </div>
+        <div style={{ position: "relative" }}>
+          <input {...api.getHiddenInputProps()} />
+          <button {...api.getTriggerProps()}>Choose Files...</button>
+
+          <button>Normal Button</button>
+
+          <ul {...api.getItemGroupProps()}>
+            {api.acceptedFiles.map((file) => {
+              return (
+                <li class="file" key={file.name} {...api.getItemProps({ file })}>
+                  <div>
+                    <b>{file.name}</b>
+                  </div>
+                  <div {...api.getItemSizeTextProps({ file })}>{api.getFileSize(file)}</div>
+                  <div>{file.type}</div>
+                  <button {...api.getItemDeleteTriggerProps({ file })}>X</button>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      </div>
+    </main>
+  )
+})
