@@ -1,0 +1,43 @@
+import { component$, useId } from "@qwik.dev/core"
+import * as qrCode from "@zag-js/qr-code"
+import { normalizeProps, useMachine } from "@zag-js/qwik"
+import { qrCodeControls } from "@zag-js/shared"
+import { StateVisualizer } from "~/components/state-visualizer"
+import { Toolbar } from "~/components/toolbar"
+import { useControls } from "~/hooks/use-controls"
+
+export default component$(() => {
+  const controls = useControls(qrCodeControls)
+  const id = useId()
+
+  const service = useMachine(
+    qrCode.machine,
+    () =>
+      ({
+        id,
+        encoding: { ecc: "H" },
+        ...controls.values(),
+      }) as qrCode.Props,
+  )
+
+  const api = qrCode.connect(service, normalizeProps)
+
+  return (
+    <>
+      <main class="qr-code">
+        <div {...api.getRootProps()}>
+          <svg {...api.getFrameProps()}>
+            <path {...api.getPatternProps()} />
+          </svg>
+          <div {...api.getOverlayProps()}>
+            <img src="https://avatars.githubusercontent.com/u/54212428?s=88&v=4" alt="" width={88} height={88} />
+          </div>
+        </div>
+      </main>
+
+      <Toolbar controls={controls.ref}>
+        <StateVisualizer state={service} omit={["encoded"]} />
+      </Toolbar>
+    </>
+  )
+})
