@@ -88,6 +88,10 @@ export default component$(() => {
         id,
         collection: getCollection(),
         name: "location",
+        // the content renders inline (Qwik has no portal); a fixed strategy
+        // keeps it out of the page's scroll container like the other
+        // examples' portalled content
+        positioning: { strategy: "fixed" },
         ...controls.values(),
       }) as cascadeSelect.Props,
   )

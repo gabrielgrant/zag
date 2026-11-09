@@ -43,6 +43,7 @@ export default component$(() => {
       ({
         id,
         collection,
+        loading: list.loading,
         placeholder: "Search people...",
         onInputValueChange({ inputValue }: combobox.InputValueChangeDetails) {
           list.setFilterText(inputValue)
