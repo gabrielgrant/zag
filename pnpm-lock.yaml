@@ -1123,15 +1123,27 @@ importers:
       '@internationalized/date':
         specifier: 3.12.4
         version: 3.12.4
+      '@tanstack/virtual-core':
+        specifier: 3.18.0
+        version: 3.18.0
       '@zag-js/accordion':
         specifier: workspace:*
         version: link:../../packages/machines/accordion
+      '@zag-js/anatomy':
+        specifier: workspace:*
+        version: link:../../packages/anatomy
       '@zag-js/angle-slider':
         specifier: workspace:*
         version: link:../../packages/machines/angle-slider
+      '@zag-js/aria-hidden':
+        specifier: workspace:*
+        version: link:../../packages/utilities/aria-hidden
       '@zag-js/async-list':
         specifier: workspace:*
         version: link:../../packages/machines/async-list
+      '@zag-js/auto-resize':
+        specifier: workspace:*
+        version: link:../../packages/utilities/auto-resize
       '@zag-js/avatar':
         specifier: workspace:*
         version: link:../../packages/machines/avatar
@@ -1150,9 +1162,15 @@ importers:
       '@zag-js/collapsible':
         specifier: workspace:*
         version: link:../../packages/machines/collapsible
+      '@zag-js/collection':
+        specifier: workspace:*
+        version: link:../../packages/utilities/collection
       '@zag-js/color-picker':
         specifier: workspace:*
         version: link:../../packages/machines/color-picker
+      '@zag-js/color-utils':
+        specifier: workspace:*
+        version: link:../../packages/utilities/color-utils
       '@zag-js/combobox':
         specifier: workspace:*
         version: link:../../packages/machines/combobox
@@ -1165,9 +1183,15 @@ importers:
       '@zag-js/date-picker':
         specifier: workspace:*
         version: link:../../packages/machines/date-picker
+      '@zag-js/date-utils':
+        specifier: workspace:*
+        version: link:../../packages/utilities/date-utils
       '@zag-js/dialog':
         specifier: workspace:*
         version: link:../../packages/machines/dialog
+      '@zag-js/dismissable':
+        specifier: workspace:*
+        version: link:../../packages/utilities/dismissable
       '@zag-js/dom-query':
         specifier: workspace:*
         version: link:../../packages/utilities/dom-query
@@ -1180,9 +1204,24 @@ importers:
       '@zag-js/file-upload':
         specifier: workspace:*
         version: link:../../packages/machines/file-upload
+      '@zag-js/file-utils':
+        specifier: workspace:*
+        version: link:../../packages/utilities/file-utils
       '@zag-js/floating-panel':
         specifier: workspace:*
         version: link:../../packages/machines/floating-panel
+      '@zag-js/focus-trap':
+        specifier: workspace:*
+        version: link:../../packages/utilities/focus-trap
+      '@zag-js/focus-visible':
+        specifier: workspace:*
+        version: link:../../packages/utilities/focus-visible
+      '@zag-js/highlight-word':
+        specifier: workspace:*
+        version: link:../../packages/utilities/highlight-word
+      '@zag-js/hotkeys':
+        specifier: workspace:*
+        version: link:../../packages/utilities/hotkeys
       '@zag-js/hover-card':
         specifier: workspace:*
         version: link:../../packages/machines/hover-card
@@ -1192,9 +1231,21 @@ importers:
       '@zag-js/image-cropper':
         specifier: workspace:*
         version: link:../../packages/machines/image-cropper
+      '@zag-js/interact-outside':
+        specifier: workspace:*
+        version: link:../../packages/utilities/interact-outside
+      '@zag-js/json-tree-utils':
+        specifier: workspace:*
+        version: link:../../packages/utilities/json-tree-utils
       '@zag-js/listbox':
         specifier: workspace:*
         version: link:../../packages/machines/listbox
+      '@zag-js/live-region':
+        specifier: workspace:*
+        version: link:../../packages/utilities/live-region
+      '@zag-js/marquee':
+        specifier: workspace:*
+        version: link:../../packages/machines/marquee
       '@zag-js/menu':
         specifier: workspace:*
         version: link:../../packages/machines/menu
@@ -1216,6 +1267,18 @@ importers:
       '@zag-js/popover':
         specifier: workspace:*
         version: link:../../packages/machines/popover
+      '@zag-js/popper':
+        specifier: workspace:*
+        version: link:../../packages/utilities/popper
+      '@zag-js/presence':
+        specifier: workspace:*
+        version: link:../../packages/machines/presence
+      '@zag-js/progress':
+        specifier: workspace:*
+        version: link:../../packages/machines/progress
+      '@zag-js/qr-code':
+        specifier: workspace:*
+        version: link:../../packages/machines/qr-code
       '@zag-js/qwik':
         specifier: workspace:*
         version: link:../../packages/frameworks/qwik
@@ -1225,18 +1288,39 @@ importers:
       '@zag-js/rating-group':
         specifier: workspace:*
         version: link:../../packages/machines/rating-group
+      '@zag-js/rect-utils':
+        specifier: workspace:*
+        version: link:../../packages/utilities/rect
+      '@zag-js/remove-scroll':
+        specifier: workspace:*
+        version: link:../../packages/utilities/remove-scroll
+      '@zag-js/scroll-area':
+        specifier: workspace:*
+        version: link:../../packages/machines/scroll-area
+      '@zag-js/scroll-snap':
+        specifier: workspace:*
+        version: link:../../packages/utilities/scroll-snap
       '@zag-js/select':
         specifier: workspace:*
         version: link:../../packages/machines/select
       '@zag-js/shared':
         specifier: workspace:*
         version: link:../../shared
+      '@zag-js/signature-pad':
+        specifier: workspace:*
+        version: link:../../packages/machines/signature-pad
       '@zag-js/slider':
         specifier: workspace:*
         version: link:../../packages/machines/slider
       '@zag-js/splitter':
         specifier: workspace:*
         version: link:../../packages/machines/splitter
+      '@zag-js/steps':
+        specifier: workspace:*
+        version: link:../../packages/machines/steps
+      '@zag-js/store':
+        specifier: workspace:*
+        version: link:../../packages/store
       '@zag-js/stringify-state':
         specifier: workspace:*
         version: link:../../packages/utilities/stringify-state
@@ -1249,9 +1333,18 @@ importers:
       '@zag-js/tags-input':
         specifier: workspace:*
         version: link:../../packages/machines/tags-input
+      '@zag-js/timer':
+        specifier: workspace:*
+        version: link:../../packages/machines/timer
       '@zag-js/toast':
         specifier: workspace:*
         version: link:../../packages/machines/toast
+      '@zag-js/toc':
+        specifier: workspace:*
+        version: link:../../packages/machines/toc
+      '@zag-js/toggle':
+        specifier: workspace:*
+        version: link:../../packages/machines/toggle
       '@zag-js/toggle-group':
         specifier: workspace:*
         version: link:../../packages/machines/toggle-group
@@ -1270,6 +1363,12 @@ importers:
       '@zag-js/utils':
         specifier: workspace:*
         version: link:../../packages/utilities/core
+      form-serialize:
+        specifier: 0.7.2
+        version: 0.7.2
+      image-conversion:
+        specifier: 2.1.1
+        version: 2.1.1
     devDependencies:
       '@qwik.dev/core':
         specifier: 2.0.0-rc.4
@@ -1277,6 +1376,9 @@ importers:
       '@qwik.dev/router':
         specifier: 2.0.0-rc.4
         version: 2.0.0-rc.4(@qwik.dev/core@2.0.0-rc.4(@oxc-project/types@0.155.0)(esbuild@0.28.2)(prettier@3.9.10)(rolldown@1.2.15)(rollup@4.65.0)(vite@8.3.5(@types/node@24.10.0)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))(vitest@5.0.5(@types/node@25.9.9)(jsdom@30.1.3)(vite@8.3.5(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(rollup@4.65.0)(supports-color@10.2.2)(typescript@6.0.3)(vite@8.3.5(@types/node@24.10.0)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+      '@types/form-serialize':
+        specifier: 0.7.4
+        version: 0.7.4
       '@types/node':
         specifier: 24.10.0
         version: 24.10.0

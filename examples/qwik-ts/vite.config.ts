@@ -20,9 +20,15 @@ export default defineConfig(() => {
       exclude: ["@zag-js/qwik"],
     },
     server: {
+      port: Number(process.env.PORT) || 3005,
+      strictPort: true,
       headers: {
         "Cache-Control": "public, max-age=0",
       },
+    },
+    preview: {
+      port: Number(process.env.PORT) || 3005,
+      strictPort: true,
     },
   }
 })

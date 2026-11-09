@@ -21,7 +21,7 @@ const examples: Record<string, Example> = {
   preact: { dir: "preact-ts", port: "3004" },
   // production preview: Qwik's preloader makes handler chunks available
   // immediately, matching the interaction timing the suite expects
-  qwik: { dir: "qwik-ts", port: "3004", command: "pnpm e2e-serve", timeout: 120_000 },
+  qwik: { dir: "qwik-ts", port: "3005", command: "pnpm e2e-serve", timeout: 120_000 },
 }
 
 export function getWebServer(): WebServer {
