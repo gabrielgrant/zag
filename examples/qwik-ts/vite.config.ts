@@ -6,7 +6,7 @@ import tsconfigPaths from "vite-tsconfig-paths"
 
 export default defineConfig(() => {
   return {
-    plugins: [qwikRouter(), qwikVite(), tsconfigPaths({ root: "." })],
+    plugins: [qwikRouter({ trailingSlash: false }), qwikVite(), tsconfigPaths({ root: "." })],
     resolve: {
       alias: {
         // shared example assets live outside the app root; the qwik optimizer
