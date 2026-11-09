@@ -89,6 +89,23 @@ component wakes on the client when the document is ready (or earlier, on the fir
 
 No setup is required for this; it is handled by the adapter.
 
+## Qwik pitfalls worth knowing
+
+- **Read machine state through calls in attributes.** Qwik's optimizer treats a property read on a `const` returned by a
+  function whose name starts with `use` as static when it appears in an attribute, so
+  `hidden={service.event.type === "x"}` (or a property of any custom `use*` helper's plain return object) is written
+  once and never updated. Calls are diffed normally: `hidden={!api.open}` and `service.state.matches(...)` are fine,
+  since `api` comes from `connect()`, not a `use*` function.
+- **Avoid a conditionally rendered `<Slot />` in a resumed component.** In Qwik 2.0.0-rc.4, mounting
+  `{open && <div><Slot /></div>}` after the component has already re-rendered on the client, followed by another
+  re-render, duplicates the component's output. zag's dialog-like parts trigger that second re-render right after
+  opening. Keep such parts mounted and rely on the `hidden` attribute zag sets.
+- **Don't call into zag packages at module top level of a component file** (e.g. `const collection = x.collection(...)`
+  next to a `component$`). Qwik's production build can place that module and the package in chunks that import each
+  other, and the call then runs before the package has loaded. Create the value inside the component or lazily.
+- **No block elements inside `<button>`.** Qwik's dev server rejects `<div>` inside `<button>` (error Q12) and exits;
+  use `<span>`.
+
 ## Machines that hold class instances in context (date/color)
 
 Some machines keep non-plain values in their context — e.g. `date-picker` and `date-input` store

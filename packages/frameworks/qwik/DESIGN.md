@@ -84,7 +84,15 @@ have run by the time the ready marker is set.
 ## `send` — synchronous with a re-entrancy queue
 
 `send` (in `machine.ts`) processes transitions **synchronously** so that state changes reach Qwik's scheduler inside the
-DOM event handler and conditional `preventDefault()` works. Two guards wrap it:
+DOM event handler and conditional `preventDefault()` works. These guards wrap it:
+
+- **Handler batching (`event-batch.ts`).** zag's handlers are written against React's deferred `send`: code after a
+  `send` in the same handler still sees the pre-send state (combobox's Enter handler sends `INPUT.ENTER`, then decides
+  whether to cancel the form submit from that state). Sends made while a wrapped zag handler runs are queued and
+  processed in order when the outermost handler returns — still inside the same event dispatch.
+- **Replaced commands (`event.replaces`).** Like the other adapters, a command that a later one with the same key
+  supersedes in the same tick (two `api.setOpen` calls) is dropped. Only these events are deferred, to a microtask;
+  DOM-driven events stay synchronous.
 
 - **Re-entrancy queue (`processing` / `sendQueue`).** A transition's action may move DOM focus, which fires a
   synchronous `focusin` whose handler calls `send` again. Running that inline would overwrite `eventRef`/`transitionRef`
@@ -117,6 +125,11 @@ journal flush, so the queue runs against committed DOM. Producers:
 - **Event names** (Qwik has no synthetic events): `onChange→onInput`, `onFocus→onFocusIn`, `onBlur→onFocusOut`,
   `onDoubleClick→onDblClick`. A part that passes both `onChange` and `onInput` (the select's hidden `<select>`, which
   must react to autofill's `change`) keeps `onChange` as the native change event.
+- **`defaultValue` / `defaultChecked`** are initial values: zag writes later changes to the element itself, and React
+  applies them on mount only. Mapped to `value`/`checked`, each change would be written back on the next render and
+  could overwrite what the user is typing. On the client the normalizer keeps emitting the value each element was
+  created with (identified by its `id`; a server-rendered element keeps its rendered attribute), so Qwik never
+  re-applies it.
 - **Attribute names:** `className→class`, `htmlFor` kept, `defaultValue→value`, `defaultChecked→checked`; everything
   else is lowercased (except an SVG/React-ism allowlist), because Qwik diffs against attribute keys read back from the
   SSR DOM, which are lowercase.
