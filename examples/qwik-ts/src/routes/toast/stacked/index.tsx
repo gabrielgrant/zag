@@ -64,6 +64,16 @@ export default component$(() => {
             Update Latest
           </button>
           <button
+            onClick$={() => {
+              if (!lastId.value) return
+              toaster.update(lastId.value, (prev) => ({
+                title: `${prev.title} (updated)`,
+              }))
+            }}
+          >
+            Append to Latest
+          </button>
+          <button
             class="toast-button"
             onClick$={() => {
               const promise = new Promise<{ name: string }>((resolve) => {

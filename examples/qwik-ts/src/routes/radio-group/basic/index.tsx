@@ -6,6 +6,10 @@ import { StateVisualizer } from "~/components/state-visualizer"
 import { Toolbar } from "~/components/toolbar"
 import { useControls } from "~/hooks/use-controls"
 
+// the api is not serializable, so click handlers reach it through a
+// module-level holder refreshed on each render
+const apiRef: { current?: radio.Api } = {}
+
 export default component$(() => {
   const controls = useControls(radioControls)
   const id = useId()
@@ -21,6 +25,7 @@ export default component$(() => {
   )
 
   const api = radio.connect(service, normalizeProps)
+  apiRef.current = api
 
   return (
     <>
@@ -42,6 +47,15 @@ export default component$(() => {
             </div>
 
             <button type="reset">Reset</button>
+            <button type="button" onClick$={() => apiRef.current?.clearValue()}>
+              Clear
+            </button>
+            <button type="button" onClick$={() => apiRef.current?.setValue("mango")}>
+              Set to Mangoes
+            </button>
+            <button type="button" onClick$={() => apiRef.current?.focus()}>
+              Focus
+            </button>
           </fieldset>
         </form>
       </main>

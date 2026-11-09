@@ -66,6 +66,13 @@ export default component$(() => {
         <button onClick$={() => (open.value = !open.value)}>{open.value ? "Close" : "Open"} panel</button>
         <button onClick$={() => (size.value = { width: 420, height: 320 })}>Set size: 420x320</button>
         <button onClick$={() => (position.value = { x: 32, y: 32 })}>Set position: (32, 32)</button>
+        {/* through normalizeProps: synchronous handlers, like zag's own parts */}
+        <button {...normalizeProps.button({ onClick: () => api.setSize({ width: 440, height: 300 }) })}>
+          API set size: 440x300
+        </button>
+        <button {...normalizeProps.button({ onClick: () => api.setPosition({ x: 48, y: 48 }) })}>
+          API set position: (48, 48)
+        </button>
         <button
           onClick$={() => {
             size.value = { width: 360, height: 260 }

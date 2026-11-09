@@ -17,6 +17,8 @@ export default component$(() => {
   const flip = useSignal<imageCropper.FlipState>({ horizontal: false, vertical: false })
   const selectedHandle = useSignal<imageCropper.HandlePosition>("e")
   const resizeStep = useSignal(10)
+  const croppedImageUrl = useSignal<string | null>(null)
+  const isExporting = useSignal(false)
 
   const service = useMachine(imageCropper.machine, () => ({
     id,
@@ -38,12 +40,31 @@ export default component$(() => {
   const api = imageCropper.connect(service, normalizeProps)
   apiRef.current = api
 
+  // The page's own action buttons go through normalizeProps like zag's parts:
+  // plain functions become synchronous handlers on the client (an onClick$ QRL
+  // runs a tick later on first use, after tests have already read the result)
+  const action = (onClick: () => void) => normalizeProps.button({ type: "button", onClick })
+
+  const centerCrop = () => {
+    const { crop, viewportRect } = api
+    api.setCrop({
+      ...crop,
+      x: (viewportRect.width - crop.width) / 2,
+      y: (viewportRect.height - crop.height) / 2,
+    })
+  }
+
+  const fillViewport = () => {
+    const { viewportRect } = api
+    api.setCrop({ x: 0, y: 0, width: viewportRect.width, height: viewportRect.height })
+  }
+
   return (
     <>
       <main class="image-cropper">
         <div {...api.getRootProps()}>
           <div {...api.getViewportProps()}>
-            <img src="/crop-image.png" {...api.getImageProps()} />
+            <img src="https://picsum.photos/seed/a/500/300" crossOrigin="anonymous" {...api.getImageProps()} />
             <div {...api.getSelectionProps()}>
               {handlePositions.map((position) => (
                 <div key={position} {...api.getHandleProps({ position })}>
@@ -85,7 +106,7 @@ export default component$(() => {
             <input
               type="checkbox"
               checked={flip.value.horizontal}
-              onInput$={(_e, el) => apiRef.current?.flipHorizontally(el.checked)}
+              {...normalizeProps.input({ onChange: (e) => api.flipHorizontally(e.currentTarget.checked) })}
             />
             Horizontal
           </label>
@@ -93,20 +114,14 @@ export default component$(() => {
             <input
               type="checkbox"
               checked={flip.value.vertical}
-              onInput$={(_e, el) => apiRef.current?.flipVertically(el.checked)}
+              {...normalizeProps.input({ onChange: (e) => api.flipVertically(e.currentTarget.checked) })}
             />
             Vertical
           </label>
           <div>
-            <button type="button" onClick$={() => apiRef.current?.flipHorizontally()}>
-              Toggle horizontal flip
-            </button>
-            <button type="button" onClick$={() => apiRef.current?.flipVertically()}>
-              Toggle vertical flip
-            </button>
-            <button type="button" onClick$={() => apiRef.current?.setFlip({ horizontal: false, vertical: false })}>
-              Reset flips
-            </button>
+            <button {...action(() => api.flipHorizontally())}>Toggle horizontal flip</button>
+            <button {...action(() => api.flipVertically())}>Toggle vertical flip</button>
+            <button {...action(() => api.setFlip({ horizontal: false, vertical: false }))}>Reset flips</button>
           </div>
         </fieldset>
         <div>
@@ -138,28 +153,104 @@ export default component$(() => {
             />
           </label>
           <div>
-            <button
-              type="button"
-              data-testid="grow-button"
-              onClick$={() => apiRef.current?.resize(selectedHandle.value, resizeStep.value)}
-            >
+            <button data-testid="grow-button" {...action(() => api.resize(selectedHandle.value, resizeStep.value))}>
               Grow selection
             </button>
-            <button
-              type="button"
-              data-testid="shrink-button"
-              onClick$={() => apiRef.current?.resize(selectedHandle.value, -resizeStep.value)}
-            >
+            <button data-testid="shrink-button" {...action(() => api.resize(selectedHandle.value, -resizeStep.value))}>
               Shrink selection
             </button>
           </div>
         </div>
 
         <div>
-          <button type="button" data-testid="reset-button" onClick$={() => apiRef.current?.reset()}>
+          <button data-testid="reset-button" {...action(() => api.reset())}>
             Reset
           </button>
+          <button data-testid="center-crop-button" {...action(centerCrop)}>
+            Center selection
+          </button>
+          <button data-testid="fill-crop-button" {...action(fillViewport)}>
+            Fill viewport
+          </button>
         </div>
+
+        <fieldset>
+          <legend>Export Cropped Image</legend>
+          <div>
+            {(["blob", "dataUrl"] as const).map((output) => (
+              <button
+                key={output}
+                type="button"
+                disabled={isExporting.value}
+                onClick$={async () => {
+                  isExporting.value = true
+                  try {
+                    const result = await apiRef.current?.getCroppedImage({ output })
+                    if (result) {
+                      croppedImageUrl.value =
+                        output === "dataUrl" ? (result as string) : URL.createObjectURL(result as Blob)
+                    }
+                  } catch (error) {
+                    console.error("Failed to export image:", error)
+                  } finally {
+                    isExporting.value = false
+                  }
+                }}
+              >
+                {isExporting.value ? "Exporting..." : output === "blob" ? "Export as Blob" : "Export as Data URL"}
+              </button>
+            ))}
+            <button
+              type="button"
+              disabled={isExporting.value}
+              onClick$={async () => {
+                isExporting.value = true
+                try {
+                  const blob = await apiRef.current?.getCroppedImage({ type: "image/png" })
+                  if (blob && blob instanceof Blob) {
+                    const url = URL.createObjectURL(blob)
+                    const link = document.createElement("a")
+                    link.href = url
+                    link.download = `cropped-image-${Date.now()}.png`
+                    document.body.appendChild(link)
+                    link.click()
+                    document.body.removeChild(link)
+                    URL.revokeObjectURL(url)
+                  }
+                } catch (error) {
+                  console.error("Failed to download image:", error)
+                } finally {
+                  isExporting.value = false
+                }
+              }}
+            >
+              {isExporting.value ? "Downloading..." : "Download PNG"}
+            </button>
+            {croppedImageUrl.value && (
+              <button
+                type="button"
+                onClick$={() => {
+                  if (croppedImageUrl.value?.startsWith("blob:")) URL.revokeObjectURL(croppedImageUrl.value)
+                  croppedImageUrl.value = null
+                }}
+              >
+                Clear Preview
+              </button>
+            )}
+          </div>
+          {croppedImageUrl.value && (
+            <div>
+              <h3>Cropped Image Preview:</h3>
+              <img
+                src={croppedImageUrl.value}
+                alt="Cropped result"
+                width={500}
+                height={300}
+                style={{ maxWidth: "100%", height: "auto", border: "1px solid #ccc" }}
+              />
+            </div>
+          )}
+        </fieldset>
       </main>
 
       <Toolbar controls={controls.ref}>
