@@ -125,18 +125,21 @@ export const normalizeProps = createNormalizer<PropTypes>((props) => {
     const value = props[key]
 
     if (isEventProp(key) && typeof value === "function") {
+      // a part that also handles `onInput` (e.g. the hidden select, which
+      // must react to autofill's `change`) means the native change event
+      const name = key === "onChange" && "onInput" in props ? key : (propMap[key] ?? key)
       if (isServer) {
         // Plain handlers can't be serialized into SSR output. Emit the
         // machine's wake QRL instead: qwikloader then announces this event
         // type, captures pre-wake interactions, and the wake QRL replays
         // them into the live handler once the activation render commits.
         const wake = getWakeHandler()
-        if (wake) normalized[`${propMap[key] ?? key}$`] = wake
+        if (wake) normalized[`${name}$`] = wake
         continue
       }
       // On the client, Qwik registers plain functions for synchronous
       // dispatch (conditional preventDefault inside zag handlers works).
-      normalized[`${propMap[key] ?? key}$`] = wrapHandler(value)
+      normalized[`${name}$`] = wrapHandler(value)
       continue
     }
 
