@@ -72,6 +72,20 @@ component wakes on the client when the document is ready (or earlier, on the fir
   nothing is dropped. The single exception is that the _very first_ pre-wake interaction cannot `preventDefault()`
   synchronously (the handler code is still loading). This matches the behaviour of interacting with any framework's UI
   mid-hydration.
+- To wait until every machine on the page is live (e.g. in end-to-end tests), await `whenMachinesStarted()` from a
+  `document-ready` visible task:
+
+  ```tsx
+  import { whenMachinesStarted } from "@zag-js/qwik"
+
+  useVisibleTask$(
+    async () => {
+      await whenMachinesStarted()
+      document.documentElement.dataset.ready = ""
+    },
+    { strategy: "document-ready" },
+  )
+  ```
 
 No setup is required for this; it is handled by the adapter.
 

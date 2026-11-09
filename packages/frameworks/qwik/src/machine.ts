@@ -28,6 +28,7 @@ import { $, type NoSerialize, noSerialize, untrack, useSignal, useVisibleTask$ }
 import { isServer } from "@qwik.dev/core/build"
 import { useBindable } from "./bindable"
 import { getContainer, waitUntilRendered } from "./qwik-internal"
+import { beginWake, endWake } from "./ready"
 import { createRefs } from "./refs"
 import { setWakeHandler } from "./wake-context"
 import { enqueueReplay } from "./wake-replay"
@@ -101,6 +102,8 @@ interface MachineInternals {
   eventRef: { current: any }
   status: MachineStatus
   startScheduled: boolean
+  /** counted in ready.ts until the machine starts or unmounts */
+  wakePending: boolean
   propsRef: { current: any }
   scopeRef: { current: any }
   contextRef: { current: any }
@@ -128,6 +131,7 @@ function createInternals(): MachineInternals {
     eventRef: { current: { type: "" } },
     status: MachineStatus.NotStarted,
     startScheduled: false,
+    wakePending: false,
     propsRef: { current: null },
     scopeRef: { current: null },
     contextRef: { current: null },
@@ -194,7 +198,9 @@ export function useMachine<T extends MachineSchema>(
       element,
       scopedName: `e:${event.type}`,
       activate: () => {
-        if (!activatedSig.value) activatedSig.value = true
+        if (activatedSig.value) return
+        beginWake()
+        activatedSig.value = true
       },
       getInternals: () => internalsSig.value as { start: VoidFunction } | undefined,
     })
@@ -540,8 +546,16 @@ export function useMachine<T extends MachineSchema>(
     // replay events buffered between render commit and machine start
     const pending = self.pendingEvents.splice(0, self.pendingEvents.length)
     pending.forEach((event) => send(event))
+    if (self.wakePending) {
+      self.wakePending = false
+      endWake()
+    }
   }
   self.stop = () => {
+    if (self.wakePending) {
+      self.wakePending = false
+      endWake()
+    }
     // never started (e.g. unmounted before the post-commit start ran): there
     // were no entry actions or effects, so there is nothing to exit
     if (self.status !== MachineStatus.Started) return
@@ -568,6 +582,9 @@ export function useMachine<T extends MachineSchema>(
    */
   if (!isServer && self.status === MachineStatus.NotStarted && !self.startScheduled) {
     self.startScheduled = true
+    // a resumed component counted its wake when it was activated
+    if (!untrack(() => activatedSig.value)) beginWake()
+    self.wakePending = true
     self.postRenderQueue.push(() => self.start())
     untrack(() => tickSig.value++)
   }
@@ -591,6 +608,7 @@ export function useMachine<T extends MachineSchema>(
       if (current) {
         current.start()
       } else if (!activatedSig.value) {
+        beginWake()
         activatedSig.value = true
       }
       cleanup(() => internalsSig.value?.stop())

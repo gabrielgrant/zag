@@ -71,7 +71,15 @@ still-queued earlier event — is closed by `isReplayDraining()`: while the queu
 `normalizeProps` defer themselves through `enqueueDeferred` instead of running inline.
 
 The first pre-wake event cannot call `preventDefault()` synchronously because the QRL chunk loads asynchronously; this
-is the documented wake-gap limitation.
+is the documented wake-gap limitation. A visible consequence: Enter on a `<button>` trigger fires the browser's `click`
+too, which zag's keydown handler would normally cancel, so a pre-wake Enter can toggle a select open and shut. A second
+known gap: a pre-wake event whose wake QRL is still loading can be overtaken by a later event that reaches a live
+handler (which buffers it until `start()`).
+
+`ready.ts` counts wakes in flight (activation requested or start scheduled, until `start()` or `stop()`), and
+`whenMachinesStarted()` resolves once all have started. The example calls it from its layout before setting
+`html[data-ready]`, which the e2e fixture waits for — matching the other examples, where effects (and so machine start)
+have run by the time the ready marker is set.
 
 ## `send` — synchronous with a re-entrancy queue
 
@@ -107,13 +115,21 @@ journal flush, so the queue runs against committed DOM. Producers:
 - **Client:** event props become Qwik `$`-suffixed props holding the wrapped plain function. Qwik registers plain
   functions on `element._qDispatch` and invokes them synchronously, preserving same-turn `preventDefault()`.
 - **Event names** (Qwik has no synthetic events): `onChange→onInput`, `onFocus→onFocusIn`, `onBlur→onFocusOut`,
-  `onDoubleClick→onDblClick`.
+  `onDoubleClick→onDblClick`. A part that passes both `onChange` and `onInput` (the select's hidden `<select>`, which
+  must react to autofill's `change`) keeps `onChange` as the native change event.
 - **Attribute names:** `className→class`, `htmlFor` kept, `defaultValue→value`, `defaultChecked→checked`; everything
   else is lowercased (except an SVG/React-ism allowlist), because Qwik diffs against attribute keys read back from the
   SSR DOM, which are lowercase.
-- **`style`** is emitted as a stable string, not an object: Zag's popper writes CSS custom properties (`--x`, `--y`)
-  straight onto the node, and a fresh style object each render would diff as changed and wipe them. An identical string
-  diffs as unchanged.
+- **`style`** is emitted as a compact `name:value;` string (see `style.ts`). Machines write some styles straight onto
+  the node (popper's `--x`, `--y`, `--z-index`, measured sizes). The other frameworks apply a style prop one property at
+  a time, so those writes survive re-renders; Qwik re-serializes the whole attribute whenever the value changes, which
+  drops them (and popper skips re-writing values it believes are set, leaving a menu at the top-left). A single
+  document-level `MutationObserver`, started on the client the first time a part has a style, watches the `style`
+  attribute of zag parts (`[data-scope]`): it records properties written by anything other than the framework and puts
+  them back right after a framework write — the same per-property semantics as the other adapters, applied before the
+  next paint. Framework writes are told apart by their compact form (CSSOM serializes as `name: value`). `ref` is not
+  used for this: Qwik runs it while diffing, before DOM writes are applied, and it would collide with a consumer's own
+  `ref`.
 
 ### Handler wrapping (`wrapHandler`)
 
