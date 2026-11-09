@@ -14,6 +14,7 @@ import type {
   Service,
 } from "@zag-js/core"
 import {
+  createReplaceTracker,
   createScope,
   findTransition,
   getExitEnterStates,
@@ -102,6 +103,7 @@ interface MachineInternals {
   eventRef: { current: any }
   status: MachineStatus
   startScheduled: boolean
+  replaceTracker: ReturnType<typeof createReplaceTracker>
   /** counted in ready.ts until the machine starts or unmounts */
   wakePending: boolean
   propsRef: { current: any }
@@ -131,6 +133,7 @@ function createInternals(): MachineInternals {
     eventRef: { current: { type: "" } },
     status: MachineStatus.NotStarted,
     startScheduled: false,
+    replaceTracker: createReplaceTracker(),
     wakePending: false,
     propsRef: { current: null },
     scopeRef: { current: null },
@@ -509,6 +512,23 @@ export function useMachine<T extends MachineSchema>(
   }
 
   const send = (event: any) => {
+    // A command that a later one in the same tick supersedes (e.g. two
+    // api.setOpen calls) is dropped, as in the other adapters. Only these
+    // commands are deferred; DOM-driven events stay synchronous so handlers
+    // can still preventDefault.
+    const key = event.replaces
+    if (key) {
+      const token = self.replaceTracker.claim(key)
+      queueMicrotask(() => {
+        if (self.replaceTracker.isReplaced(key, token)) return
+        dispatch(event)
+      })
+      return
+    }
+    dispatch(event)
+  }
+
+  const dispatch = (event: any) => {
     if (self.status === MachineStatus.NotStarted && self.startScheduled) {
       // live handlers attach when the client render commits, but the machine
       // starts one task later — buffer events that land in that gap
