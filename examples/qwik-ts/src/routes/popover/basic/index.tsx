@@ -32,7 +32,7 @@ export default component$(() => {
 
           <button data-testid="popover-trigger" {...api.getTriggerProps()}>
             Click me
-            <div {...api.getIndicatorProps()}>{">"}</div>
+            <span {...api.getIndicatorProps()}>{">"}</span>
           </button>
 
           <div {...api.getAnchorProps()}>anchor</div>

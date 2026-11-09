@@ -30,7 +30,7 @@ export default component$(() => {
               <h3>
                 <button data-testid={`${item.id}:trigger`} {...api.getItemTriggerProps({ value: item.id })}>
                   {item.label}
-                  <div {...api.getItemIndicatorProps({ value: item.id })}>{"→"}</div>
+                  <span {...api.getItemIndicatorProps({ value: item.id })}>{"→"}</span>
                 </button>
               </h3>
               <div data-testid={`${item.id}:content`} {...api.getItemContentProps({ value: item.id })}>

@@ -27,7 +27,7 @@ export default component$(() => {
         <div {...api.getRootProps()}>
           <button {...api.getTriggerProps()}>
             Collapsible Trigger
-            <div {...api.getIndicatorProps()}>{"▾"}</div>
+            <span {...api.getIndicatorProps()}>{"▾"}</span>
           </button>
           <div {...api.getContentProps()}>
             <p>

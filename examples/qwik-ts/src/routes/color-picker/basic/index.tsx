@@ -40,8 +40,12 @@ export default component$(() => {
 
             <div {...api.getControlProps()}>
               <button {...api.getTriggerProps()}>
-                <div {...api.getTransparencyGridProps({ size: "10px" })} />
-                <div {...api.getSwatchProps({ value: api.value })} />
+                {/* spans, not divs: Qwik's dev SSR rejects block elements in a
+                    <button>; the flex wrapper keeps the swatch sized */}
+                <span style={{ display: "flex" }}>
+                  <span {...api.getTransparencyGridProps({ size: "10px" })} />
+                  <span {...api.getSwatchProps({ value: api.value })} />
+                </span>
               </button>
               <input {...api.getChannelInputProps({ channel: "hex" })} />
               <input {...api.getChannelInputProps({ channel: "alpha" })} />
@@ -106,10 +110,10 @@ export default component$(() => {
                   <div {...api.getSwatchGroupProps()} style={{ display: "flex", gap: "10px" }}>
                     {presets.map((preset) => (
                       <button key={preset} {...api.getSwatchTriggerProps({ value: preset })}>
-                        <div style={{ position: "relative" }}>
-                          <div {...api.getTransparencyGridProps({ size: "4px" })} />
-                          <div {...api.getSwatchProps({ value: preset })} />
-                        </div>
+                        <span style={{ position: "relative", display: "flex" }}>
+                          <span {...api.getTransparencyGridProps({ size: "4px" })} />
+                          <span {...api.getSwatchProps({ value: preset })} />
+                        </span>
                       </button>
                     ))}
                   </div>
