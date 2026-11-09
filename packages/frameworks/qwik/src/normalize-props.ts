@@ -1,6 +1,7 @@
 import { createNormalizer } from "@zag-js/types"
 import type { CSSProperties, HTMLElementAttrs, QwikIntrinsicElements } from "@qwik.dev/core"
 import { isServer } from "@qwik.dev/core/build"
+import { runHandler } from "./event-batch"
 import { preserveElementStyles, toStyleString } from "./style"
 import { getWakeHandler } from "./wake-context"
 import { enqueueDeferred, isReplayDraining } from "./wake-replay"
@@ -58,7 +59,7 @@ function wrapHandler(fn: (event: Event) => void) {
           // some synthetic events may not allow redefinition; fall through
         }
       }
-      return fn(event)
+      return runHandler(() => fn(event))
     }
 
     // A pre-wake event for some component is still being replayed in FIFO

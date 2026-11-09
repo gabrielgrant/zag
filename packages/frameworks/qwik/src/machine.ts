@@ -29,6 +29,7 @@ import { $, type NoSerialize, noSerialize, untrack, useSignal, useVisibleTask$ }
 import { isServer } from "@qwik.dev/core/build"
 import { useBindable } from "./bindable"
 import { getContainer, waitUntilRendered } from "./qwik-internal"
+import { deferWhileHandling } from "./event-batch"
 import { beginWake, endWake } from "./ready"
 import { createRefs } from "./refs"
 import { setWakeHandler } from "./wake-context"
@@ -512,6 +513,9 @@ export function useMachine<T extends MachineSchema>(
   }
 
   const send = (event: any) => {
+    // inside a zag handler: process once it returns (see event-batch.ts)
+    if (deferWhileHandling(() => send(event))) return
+
     // A command that a later one in the same tick supersedes (e.g. two
     // api.setOpen calls) is dropped, as in the other adapters. Only these
     // commands are deferred; DOM-driven events stay synchronous so handlers
