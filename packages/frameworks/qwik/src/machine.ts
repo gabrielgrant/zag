@@ -542,6 +542,9 @@ export function useMachine<T extends MachineSchema>(
     pending.forEach((event) => send(event))
   }
   self.stop = () => {
+    // never started (e.g. unmounted before the post-commit start ran): there
+    // were no entry actions or effects, so there is nothing to exit
+    if (self.status !== MachineStatus.Started) return
     debug("unmounting...")
     self.status = MachineStatus.Stopped
     self.effects.forEach((fn) => fn?.())
